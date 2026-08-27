@@ -2,6 +2,7 @@
   const AGENT_URL = "https://site-agent-production.up.railway.app";
   // Public speed-bump filter for curl, not a secret.
   const SITE_TOKEN = "4f4ec8bc502fe37e4de9805169f4cb89";
+  const SESSION_KEY = "site-agent-session";
   const CHAT_MAX = 2000;
   const WELCOME =
     "Ask about Efrain's AI consulting — product work, LLM systems, or a short review. What are you trying to ship?";
@@ -9,6 +10,33 @@
   if (!AGENT_URL) return;
 
   const rootUrl = AGENT_URL.replace(/\/$/, "");
+
+  function readStoredSession() {
+    try {
+      return sessionStorage.getItem(SESSION_KEY) || "";
+    } catch (err) {
+      return "";
+    }
+  }
+
+  function writeStoredSession(id) {
+    try {
+      sessionStorage.setItem(SESSION_KEY, id);
+    } catch (err) {
+      // Private mode can block sessionStorage; in-memory id still works this tab.
+    }
+  }
+
+  function ensureSessionId() {
+    let id = readStoredSession();
+    if (!id) {
+      id = crypto.randomUUID();
+      writeStoredSession(id);
+    }
+    return id;
+  }
+
+  let sessionId = ensureSessionId();
 
   function el(tag, attrs, children) {
     const node = document.createElement(tag);
@@ -322,7 +350,13 @@
     chatInput.disabled = true;
     chatSend.textContent = "Sending…";
     try {
-      const result = await postJson("/v1/chat", { message: clipped });
+      const result = await postJson("/v1/chat", { message: clipped, session_id: sessionId });
+      const minted =
+        result.data && typeof result.data.session_id === "string" ? result.data.session_id.trim() : "";
+      if (minted) {
+        sessionId = minted;
+        writeStoredSession(sessionId);
+      }
       if (!result.res.ok) {
         addMessage("error", humanError(result.res));
       } else {
