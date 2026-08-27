@@ -1,5 +1,6 @@
 (function () {
   const AGENT_URL = "https://site-agent-production.up.railway.app";
+  // Public speed-bump filter for curl, not a secret.
   const SITE_TOKEN = "4f4ec8bc502fe37e4de9805169f4cb89";
   const CHAT_MAX = 2000;
   const WELCOME =
