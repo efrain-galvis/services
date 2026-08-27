@@ -27,13 +27,56 @@
     }
   }
 
-  function ensureSessionId() {
-    let id = readStoredSession();
-    if (!id) {
-      id = crypto.randomUUID();
-      writeStoredSession(id);
+  function bytesToUuid(bytes) {
+    let hex = "";
+    for (let i = 0; i < bytes.length; i++) {
+      hex += (bytes[i] + 0x100).toString(16).slice(1);
     }
-    return id;
+    return (
+      hex.slice(0, 8) +
+      "-" +
+      hex.slice(8, 12) +
+      "-" +
+      hex.slice(12, 16) +
+      "-" +
+      hex.slice(16, 20) +
+      "-" +
+      hex.slice(20)
+    );
+  }
+
+  function mintSessionId() {
+    try {
+      if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+        return crypto.randomUUID();
+      }
+    } catch (err) {
+      // HTTP / non-secure contexts can throw even when the method exists.
+    }
+    try {
+      if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+        const bytes = new Uint8Array(16);
+        crypto.getRandomValues(bytes);
+        bytes[6] = (bytes[6] & 0x0f) | 0x40;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+        return bytesToUuid(bytes);
+      }
+    } catch (err) {
+      // getRandomValues is also missing or blocked in some old / restricted runtimes.
+    }
+    return "";
+  }
+
+  function ensureSessionId() {
+    try {
+      const stored = readStoredSession();
+      if (stored) return stored;
+      const minted = mintSessionId();
+      if (minted) writeStoredSession(minted);
+      return minted;
+    } catch (err) {
+      return "";
+    }
   }
 
   let sessionId = ensureSessionId();
@@ -350,7 +393,9 @@
     chatInput.disabled = true;
     chatSend.textContent = "Sending…";
     try {
-      const result = await postJson("/v1/chat", { message: clipped, session_id: sessionId });
+      const payload = { message: clipped };
+      if (sessionId) payload.session_id = sessionId;
+      const result = await postJson("/v1/chat", payload);
       const minted =
         result.data && typeof result.data.session_id === "string" ? result.data.session_id.trim() : "";
       if (minted) {
