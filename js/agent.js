@@ -4,6 +4,8 @@
   const SITE_TOKEN = "4f4ec8bc502fe37e4de9805169f4cb89";
   const SESSION_KEY = "site-agent-session";
   const CHAT_MAX = 2000;
+  const CHAT_TIMEOUT_MS = 25000;
+  const MEETINGS_TIMEOUT_MS = 20000;
   const WELCOME =
     "Ask about Efrain's AI consulting — product work, LLM systems, or a short review. What are you trying to ship?";
 
@@ -322,25 +324,38 @@
     return "The assistant could not reply just now. Try again, or use the contact form.";
   }
 
-  async function postJson(path, body) {
-    const res = await fetch(rootUrl + path, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Site-Token": SITE_TOKEN,
-      },
-      body: JSON.stringify(body),
-    });
-    let data = null;
-    const raw = await res.text();
-    if (raw) {
-      try {
-        data = JSON.parse(raw);
-      } catch (err) {
-        data = null;
+  function isAbortError(err) {
+    return Boolean(err && err.name === "AbortError");
+  }
+
+  async function postJson(path, body, timeoutMs) {
+    const controller = new AbortController();
+    const timer = setTimeout(function () {
+      controller.abort();
+    }, timeoutMs);
+    try {
+      const res = await fetch(rootUrl + path, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Site-Token": SITE_TOKEN,
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      let data = null;
+      const raw = await res.text();
+      if (raw) {
+        try {
+          data = JSON.parse(raw);
+        } catch (err) {
+          data = null;
+        }
       }
+      return { res: res, data: data };
+    } finally {
+      clearTimeout(timer);
     }
-    return { res: res, data: data };
   }
 
   launcher.addEventListener("click", toggle);
@@ -395,7 +410,7 @@
     try {
       const payload = { message: clipped };
       if (sessionId) payload.session_id = sessionId;
-      const result = await postJson("/v1/chat", payload);
+      const result = await postJson("/v1/chat", payload, CHAT_TIMEOUT_MS);
       const minted =
         result.data && typeof result.data.session_id === "string" ? result.data.session_id.trim() : "";
       if (minted) {
@@ -409,7 +424,11 @@
         addMessage("assistant", reply || "No reply came back. Try again, or use the contact form.");
       }
     } catch (err) {
-      addMessage("error", humanError(null));
+      if (isAbortError(err)) {
+        addMessage("error", "The assistant took too long. Try again, or use the contact form.");
+      } else {
+        addMessage("error", humanError(null));
+      }
     } finally {
       chatBusy = false;
       chatSend.disabled = false;
@@ -445,7 +464,7 @@
     const payload = { name: name, email: email, message: message };
     if (timezone) payload.timezone = timezone;
     try {
-      const result = await postJson("/v1/meetings", payload);
+      const result = await postJson("/v1/meetings", payload, MEETINGS_TIMEOUT_MS);
       if (!result.res.ok) {
         let note = "Could not send the request just now. Use the contact form on this page instead.";
         if (result.res.status === 401) {
@@ -462,7 +481,11 @@
         bookTz.value = defaultTz;
       }
     } catch (err) {
-      bookStatus.textContent = "Could not reach the server. Use the contact form on this page instead.";
+      if (isAbortError(err)) {
+        bookStatus.textContent = "The request took too long. Use the contact form on this page instead.";
+      } else {
+        bookStatus.textContent = "Could not reach the server. Use the contact form on this page instead.";
+      }
       bookStatus.classList.add("is-err");
     } finally {
       bookBusy = false;
