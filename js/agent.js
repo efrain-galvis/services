@@ -3,9 +3,16 @@
   // Public speed-bump filter for curl, not a secret.
   const SITE_TOKEN = "4f4ec8bc502fe37e4de9805169f4cb89";
   const SESSION_KEY = "site-agent-session";
+  // Client-side guards. These are a courtesy to the backend, not a control:
+  // anything here is trivially bypassed with curl or devtools. The real rate
+  // limiting, per-request token cap and spend ceiling have to live in the
+  // Railway service. See SECURITY-TODO.md.
   const CHAT_MAX = 2000;
+  const CHAT_MAX_TURNS = 25;
   const CHAT_TIMEOUT_MS = 25000;
   const MEETINGS_TIMEOUT_MS = 20000;
+  const LIMIT_NOTE =
+    "That is the limit for this chat session. Reload to start over, or use the contact form.";
   const WELCOME =
     "Ask about Efrain's AI consulting — product work, LLM systems, or a short review. What are you trying to ship?";
 
@@ -283,6 +290,7 @@
 
   let open = false;
   let chatBusy = false;
+  let chatTurns = 0;
   let bookBusy = false;
   let activeTab = "chat";
 
@@ -419,9 +427,14 @@
       chatInput.focus();
       return;
     }
+    if (chatTurns >= CHAT_MAX_TURNS) {
+      addMessage("error", LIMIT_NOTE);
+      return;
+    }
     const clipped = message.slice(0, CHAT_MAX);
     chatInput.value = "";
     addMessage("user", clipped);
+    chatTurns += 1;
     chatBusy = true;
     chatSend.disabled = true;
     chatInput.disabled = true;
@@ -450,10 +463,12 @@
       }
     } finally {
       chatBusy = false;
-      chatSend.disabled = false;
-      chatInput.disabled = false;
+      const spent = chatTurns >= CHAT_MAX_TURNS;
+      chatSend.disabled = spent;
+      chatInput.disabled = spent;
       chatSend.textContent = "Send";
-      chatInput.focus();
+      if (spent) addMessage("error", LIMIT_NOTE);
+      else chatInput.focus();
     }
   });
 
