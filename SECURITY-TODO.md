@@ -8,7 +8,9 @@ The code-level work is already done and is not repeated here: the chat widget
 renders model output through `textContent` only and no longer has an
 `innerHTML` path, `index.html` carries a CSP and a referrer policy, the fonts
 are self-hosted, and the chat has a length clamp, an in-flight lock, an abort
-timeout and a 25-turn session cap.
+timeout and a 25-turn cap that persists for the life of the browser tab.
+None of the chat guards are security controls — `curl` ignores every one of
+them, which is what section 1 is for.
 
 ---
 
@@ -17,18 +19,30 @@ timeout and a 25-turn session cap.
 This is where actual money and actual abuse live. Everything the browser does
 is advisory; a request from `curl` skips all of it.
 
-- [ ] **Restrict CORS to the real origin.** Allow `https://efrain-galvis.info`
-      only. Not `*`, and drop the `github.io` origin once the custom domain is
-      the only one you use. This is the control that makes the `X-Site-Token`
-      in `js/agent.js` mean anything at all.
+- [ ] **Restrict CORS to the real origin — and fix it, it is currently broken.**
+      A live preflight from `Origin: https://efrain-galvis.info` returns **400
+      with no `Access-Control-Allow-Origin`**, while the old
+      `https://efrain-galvis.github.io` origin returns 200. The chat does not
+      work at the canonical domain right now. Allow the apex origin, then drop
+      the `github.io` one once the custom domain is the only entry point. Not
+      `*`. This is the control that makes the `X-Site-Token` in `js/agent.js`
+      mean anything at all.
 - [ ] **Rate limit per IP** on `/v1/chat` and `/v1/meetings` — something like
       20 requests/minute and a few hundred per day. The client caps a tab at 25
       turns; the server has to cap everyone else.
 - [ ] **Cap tokens per request** (max input and max output) at the provider
       call, so one long prompt cannot buy a large completion.
+- [ ] **Enforce a global daily token and spend cap in the service itself.**
+      This is the real brake, and it is not the same as the two limits above:
+      a per-IP rate limit is defeated by spreading traffic across addresses,
+      and a per-request token cap only bounds a single call. Without a server-
+      side daily aggregate, many small, individually-legal requests still add
+      up to the whole budget. Refuse further provider calls once the day's
+      ceiling is hit, and alert rather than fail silently.
 - [ ] **Set a hard monthly spend ceiling** in the LLM provider console, plus a
-      billing alert well below it. Without this, a scripted abuser turns your
-      landing page into an unbounded invoice.
+      billing alert well below it. Treat this as the backstop, not the control:
+      a monthly ceiling can be exhausted on the third of the month, which is
+      why the daily cap above has to exist too.
 - [ ] **Confirm the agent has no tools with side effects** — no shell, no file
       writes, no outbound HTTP it controls, no email sending beyond the fixed
       booking notification.
@@ -36,10 +50,24 @@ is advisory; a request from `curl` skips all of it.
       the public marketing copy. Anything in its context can be talked out of
       it by a determined visitor; assume every prompt-injection attempt will be
       tried.
+- [ ] **Confirm meeting PII never reaches a model.** The booking form sends a
+      real name, a real email address, free-text and a timezone to
+      `/v1/meetings`. That free-text box is exactly where someone pastes
+      something confidential about their company. Verify as an explicit
+      backend invariant that this handler performs only the fixed
+      delivery/storage path — that no part of the payload, and no
+      notification built from it, is passed to Llama or any other model, for
+      summarising, classifying, drafting a reply or anything else. Do not
+      leave this implied by the general "no private data" item below: that
+      one is about what the agent can read, this one is about what the
+      booking path is allowed to forward. Re-check it whenever the booking
+      handler changes.
 - [ ] **Validate and bound `/v1/meetings` input** server-side (length limits,
       email shape) and escape it wherever the booking lands — an email body, a
       dashboard, a Slack message. That form is an unauthenticated write path
       into whatever it feeds.
+- [ ] **Decide how long bookings are retained** and where. PII that is not
+      stored cannot leak.
 - [ ] **Do not echo request contents in error bodies.** The widget shows its
       own fixed error strings today; keep it that way by not returning
       reflected input.
