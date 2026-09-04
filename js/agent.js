@@ -3,6 +3,7 @@
   // Public speed-bump filter for curl, not a secret.
   const SITE_TOKEN = "4f4ec8bc502fe37e4de9805169f4cb89";
   const SESSION_KEY = "site-agent-session";
+  const TURNS_KEY = "site-agent-turns";
   // Client-side guards. These are a courtesy to the backend, not a control:
   // anything here is trivially bypassed with curl or devtools. The real rate
   // limiting, per-request token cap and spend ceiling have to live in the
@@ -12,7 +13,7 @@
   const CHAT_TIMEOUT_MS = 25000;
   const MEETINGS_TIMEOUT_MS = 20000;
   const LIMIT_NOTE =
-    "That is the limit for this chat session. Reload to start over, or use the contact form.";
+    "That is the limit for this chat session. Use the contact form to keep the conversation going.";
   const WELCOME =
     "Ask about Efrain's AI consulting — product work, LLM systems, or a short review. What are you trying to ship?";
 
@@ -33,6 +34,29 @@
       sessionStorage.setItem(SESSION_KEY, id);
     } catch (err) {
       // Private mode can block sessionStorage; in-memory id still works this tab.
+    }
+  }
+
+  // The turn count has to live wherever the session id lives. Keeping it in
+  // memory alone meant a reload restored the same conversation with the
+  // counter back at zero, handing out another 25 turns on the same backend
+  // context. Storage can be unavailable, in which case the cap degrades to
+  // per-page-load -- still a courtesy guard, never a security boundary.
+  function readStoredTurns() {
+    try {
+      const raw = parseInt(sessionStorage.getItem(TURNS_KEY), 10);
+      if (!isFinite(raw) || raw < 0) return 0;
+      return Math.min(raw, CHAT_MAX_TURNS);
+    } catch (err) {
+      return 0;
+    }
+  }
+
+  function writeStoredTurns(count) {
+    try {
+      sessionStorage.setItem(TURNS_KEY, String(count));
+    } catch (err) {
+      // Same as above: the in-memory count still holds for this page load.
     }
   }
 
@@ -290,7 +314,7 @@
 
   let open = false;
   let chatBusy = false;
-  let chatTurns = 0;
+  let chatTurns = readStoredTurns();
   let bookBusy = false;
   let activeTab = "chat";
 
@@ -336,6 +360,14 @@
   function addMessage(kind, text) {
     log.appendChild(el("p", { className: "agent-msg agent-msg-" + kind, text: text }));
     log.scrollTop = log.scrollHeight;
+  }
+
+  // A reload that lands on a spent session must come back spent, rather than
+  // offering a composer the cap will reject on submit.
+  if (chatTurns >= CHAT_MAX_TURNS) {
+    chatInput.disabled = true;
+    chatSend.disabled = true;
+    addMessage("error", LIMIT_NOTE);
   }
 
   function humanError(res) {
@@ -435,6 +467,7 @@
     chatInput.value = "";
     addMessage("user", clipped);
     chatTurns += 1;
+    writeStoredTurns(chatTurns);
     chatBusy = true;
     chatSend.disabled = true;
     chatInput.disabled = true;
