@@ -91,7 +91,6 @@
         if (value == null || value === false) return;
         if (key === "className") node.className = value;
         else if (key === "text") node.textContent = value;
-        else if (key === "html") node.innerHTML = value;
         else node.setAttribute(key, value === true ? "" : String(value));
       });
     }
@@ -101,10 +100,27 @@
     return node;
   }
 
-  const chatIcon =
-    '<svg class="agent-icon agent-icon-chat" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M5.2 18.6 3 21.2V6.4A2.4 2.4 0 0 1 5.4 4h13.2A2.4 2.4 0 0 1 21 6.4v9.2a2.4 2.4 0 0 1-2.4 2.4H8.1l-2.9 2.6Zm.6-2.2.9-.8h12.3V6.4H5.4v10z"/></svg>';
-  const closeIcon =
-    '<svg class="agent-icon agent-icon-close" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M6.4 5.3 12 10.9l5.6-5.6 1.1 1.1L13.1 12l5.6 5.6-1.1 1.1L12 13.1l-5.6 5.6-1.1-1.1L10.9 12 5.3 6.4l1.1-1.1Z"/></svg>';
+  const SVG_NS = "http://www.w3.org/2000/svg";
+
+  // Built as nodes rather than markup so no code path in this file parses
+  // HTML. The DOM never gets a string it has to interpret.
+  function icon(variant, path) {
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("class", "agent-icon agent-icon-" + variant);
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    const node = document.createElementNS(SVG_NS, "path");
+    node.setAttribute("fill", "currentColor");
+    node.setAttribute("d", path);
+    svg.appendChild(node);
+    return svg;
+  }
+
+  const CHAT_PATH =
+    "M5.2 18.6 3 21.2V6.4A2.4 2.4 0 0 1 5.4 4h13.2A2.4 2.4 0 0 1 21 6.4v9.2a2.4 2.4 0 0 1-2.4 2.4H8.1l-2.9 2.6Zm.6-2.2.9-.8h12.3V6.4H5.4v10z";
+  const CLOSE_PATH =
+    "M6.4 5.3 12 10.9l5.6-5.6 1.1 1.1L13.1 12l5.6 5.6-1.1 1.1L12 13.1l-5.6 5.6-1.1-1.1L10.9 12 5.3 6.4l1.1-1.1Z";
 
   const launcher = el("button", {
     className: "agent-launcher",
@@ -112,8 +128,7 @@
     "aria-expanded": "false",
     "aria-controls": "agent-panel",
     "aria-label": "Ask about working together",
-    html: chatIcon + closeIcon,
-  });
+  }, [icon("chat", CHAT_PATH), icon("close", CLOSE_PATH)]);
 
   const panelTitle = el("h2", { className: "agent-title", id: "agent-title", text: "Working together" });
   const panelKicker = el("p", { className: "agent-kicker", text: "AI consulting" });
@@ -121,8 +136,7 @@
     className: "agent-panel-close",
     type: "button",
     "aria-label": "Close chat",
-    html: closeIcon,
-  });
+  }, [icon("close", CLOSE_PATH)]);
 
   const tabChat = el("button", {
     className: "agent-tab",
@@ -306,6 +320,11 @@
     }
   }
 
+  // Model output and the user's own echo both land here, and both are
+  // untrusted: an agent will happily repeat back whatever a visitor, or a
+  // page it retrieved, told it to say. Keep this on textContent. If rich
+  // replies are ever wanted, build the nodes with createElement against an
+  // allowlist of tags -- never assemble a string and hand it to the parser.
   function addMessage(kind, text) {
     log.appendChild(el("p", { className: "agent-msg agent-msg-" + kind, text: text }));
     log.scrollTop = log.scrollHeight;
