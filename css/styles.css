@@ -1,6 +1,10 @@
 /* Self-hosted fonts. Same variable files Google served, so rendering is
    unchanged; hosting them here is what lets the CSP use 'self' for
-   style-src and font-src instead of trusting fonts.googleapis.com. */
+   style-src and font-src instead of trusting fonts.googleapis.com.
+
+   Fraunces and Source Sans 3 are both SIL OFL 1.1. The licences, copyright
+   notices, provenance and checksums live in assets/fonts/ -- read
+   assets/fonts/README.md before replacing any of these files. */
 @font-face {
   font-family: "Fraunces";
   font-style: normal;
