@@ -6,13 +6,11 @@
   <meta name="description" content="Efrain Galvis — applied AI consulting for products, systems, and practices that hold up in production.">
   <meta name="theme-color" content="#1C1714">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://site-agent-production.up.railway.app; form-action 'none'; base-uri 'none'; object-src 'none'">
   <title>Efrain Galvis — applied AI</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;family=Libre+Franklin:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/agent.css">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -32,9 +30,9 @@
           <p class="eyebrow hero-eyebrow">Applied AI</p>
           <h1 id="hero-title">Efrain Galvis</h1>
           <p class="lede">I help companies become AI-driven: where AI belongs in the product, and the systems and practices that keep it working.</p>
-          <p class="sub-lede">So instead of a contact form, there is an agent. It knows my work, it shows what it looks up, and it will write your brief for you.</p>
+          <p class="sub-lede">Use the live agent to ask about the work, describe your problem, or request a meeting.</p>
           <div class="hero-actions">
-            <a class="btn btn-primary" href="#agent">Ask the agent →</a>
+            <a class="btn btn-primary agent-cta" href="#contact">Ask the agent →</a>
             <a class="btn btn-secondary" href="https://x.com/EfrainGalvis1" rel="noopener noreferrer" target="_blank">Message on X</a>
           </div>
 
@@ -80,31 +78,22 @@
           </div>
         </section>
 
-        <aside class="agent-column" id="agent" aria-label="Agent preview">
+        <aside class="agent-column" id="agent" aria-label="Live agent">
           <div class="agent-sticky">
             <section class="agent-card" aria-labelledby="agent-title">
               <header class="agent-titlebar">
                 <h2 id="agent-title"><span aria-hidden="true"></span>agent</h2>
-                <p>waiting</p>
+                <p>live</p>
               </header>
-              <div class="agent-intake">
-                <p class="agent-label">Before we start</p>
-                <h3>Who am I talking to?</h3>
-                <p class="agent-hint">One tap. It changes what the agent leads with — and it tells me who stopped by.</p>
-                <div class="role-list" aria-label="Agent roles unavailable in this preview">
-                  <button type="button" disabled><span>01</span><span><strong>Founder or CTO</strong><small>I have a product problem</small></span><span>→</span></button>
-                  <button type="button" disabled><span>02</span><span><strong>Product manager</strong><small>Figuring out where AI fits</small></span><span>→</span></button>
-                  <button type="button" disabled><span>03</span><span><strong>Engineering lead</strong><small>Evaluating him as a contractor</small></span><span>→</span></button>
-                  <button type="button" disabled><span>04</span><span><strong>Recruiter or hiring</strong><small>Looking at him for a role</small></span><span>→</span></button>
-                </div>
-                <div class="visitor-fields">
-                  <label><span class="visually-hidden">Name (optional)</span><input type="text" placeholder="Name (optional)" disabled></label>
-                  <label><span class="visually-hidden">Email (optional)</span><input type="email" placeholder="Email (optional)" disabled></label>
-                </div>
-                <p class="privacy-note">Stays in your browser. It only leaves if you send the brief.</p>
+              <div class="agent-launch">
+                <p class="agent-label">Live now</p>
+                <h3>What are you trying to ship?</h3>
+                <p>Ask about Efrain's AI consulting — product work, LLM systems, or a short review.</p>
+                <a class="btn btn-primary agent-cta" href="#contact">Open live chat →</a>
+                <a class="agent-email" href="mailto:galvisefrain@gmail.com">Or email Efrain directly</a>
               </div>
             </section>
-            <p class="agent-proof">Every lookup the agent makes is printed above. Nothing hidden, nothing invented — same way I work.</p>
+            <p class="agent-proof">The live chat opens in a separate panel. Email stays available if the agent is offline.</p>
           </div>
         </aside>
       </div>
@@ -147,9 +136,9 @@
         <aside class="contact-card" id="contact" aria-labelledby="contact-title">
           <p class="eyebrow">Contact</p>
           <h3 id="contact-title">Write when you have a real problem.</h3>
-          <p>Fastest is the agent — it drafts the email for you. Otherwise X for a quick word, GitHub for public work, or write directly.</p>
+          <p>Fastest is the live chat. Otherwise X for a quick word, GitHub for public work, or write directly.</p>
           <div class="contact-actions">
-            <a class="btn btn-primary" href="#agent">Use the agent</a>
+            <a class="btn btn-primary agent-cta" href="mailto:galvisefrain@gmail.com">Use the agent</a>
             <a class="btn btn-secondary" href="mailto:galvisefrain@gmail.com">Email</a>
             <a class="btn btn-secondary" href="https://x.com/EfrainGalvis1" rel="noopener noreferrer" target="_blank">X</a>
             <a class="btn btn-secondary" href="https://github.com/efrain-galvis" rel="noopener noreferrer" target="_blank">GitHub</a>
@@ -164,5 +153,7 @@
       </footer>
     </main>
   </div>
+  <script src="js/agent.js"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>

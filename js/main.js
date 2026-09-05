@@ -16,6 +16,22 @@
     });
   }
 
+  document.addEventListener("click", function (event) {
+    const trigger = event.target.closest(".agent-cta");
+    if (!trigger) return;
+    const launcher = document.querySelector(".agent-launcher");
+    if (!launcher) return;
+
+    event.preventDefault();
+    if (launcher.getAttribute("aria-expanded") !== "true") {
+      launcher.click();
+      return;
+    }
+
+    const input = document.querySelector(".agent-input");
+    if (input) input.focus();
+  });
+
   const form = document.getElementById("contact-form");
   if (form) {
     form.addEventListener("submit", function (event) {
