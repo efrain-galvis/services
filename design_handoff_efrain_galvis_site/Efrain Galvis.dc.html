@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Efrain Galvis — applied AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: #1C1714; color: #F3EDE7; font-family: "Libre Franklin", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: #E8613C; text-decoration: none; }
+  a:hover { color: #F58A6A; }
+  ::selection { background: #E8613C; color: #1C1714; }
+  input, textarea, button { font: inherit; color: inherit; }
+  input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid #E8613C; outline-offset: 2px; }
+  @keyframes blink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: 0.15; } }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.82); } }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .om-scroll::-webkit-scrollbar { width: 8px; }
+  .om-scroll::-webkit-scrollbar-thumb { background: #3B322C; border-radius: 8px; }
+</style>
+</helmet>
+
+<div style="min-height: 100vh; background-color: #1C1714; background-image: radial-gradient(#2E2620 1px, transparent 1px); background-size: 22px 22px; background-position: -1px -1px;">
+
+  <header style="display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 20px clamp(20px, 5vw, 64px); border-bottom: 1px solid #2B2320; position: sticky; top: 0; z-index: 20; background: rgba(28, 23, 20, 0.86); backdrop-filter: blur(10px);">
+    <a href="#top" style="font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #F3EDE7;">E. Galvis</a>
+    <div style="display: flex; align-items: center; gap: 20px; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.06em;">
+      <span style="display: flex; align-items: center; gap: 8px; color: #A79A90;">
+        <span style="width: 7px; height: 7px; border-radius: 50%; background: #7CE0A3; animation: pulse 2.4s ease-in-out infinite;"></span>
+        {{ availabilityLabel }}
+      </span>
+      <a href="https://github.com/efrain-galvis" target="_blank" rel="noopener" style="color: #A79A90;" style-hover="color:#F3EDE7">GitHub</a>
+      <a href="https://x.com/EfrainGalvis1" target="_blank" rel="noopener" style="color: #A79A90;" style-hover="color:#F3EDE7">X</a>
+    </div>
+  </header>
+
+  <main id="top" style="max-width: 1320px; margin: 0 auto; padding: clamp(36px, 6vw, 76px) clamp(20px, 5vw, 64px) 0;">
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: clamp(32px, 5vw, 64px); align-items: start;">
+
+      <section>
+        <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: #E8613C; margin: 0 0 22px;">Applied AI</p>
+        <h1 style="font-size: clamp(42px, 6vw, 76px); line-height: 0.98; letter-spacing: -0.03em; font-weight: 600; margin: 0 0 24px;">Efrain Galvis</h1>
+        <p style="font-size: clamp(18px, 2.1vw, 23px); line-height: 1.45; color: #D6CBC2; margin: 0 0 14px; max-width: 32ch; text-wrap: pretty;">I help companies become AI-driven: where AI belongs in the product, and the systems and practices that keep it working.</p>
+        <p style="font-size: 15px; line-height: 1.6; color: #8E8177; margin: 0 0 34px; max-width: 40ch; text-wrap: pretty;">So instead of a contact form, there is an agent. It knows my work, it shows what it looks up, and it will write your brief for you.</p>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 44px;">
+          <button type="button" onClick="{{ focusAgent }}" style="padding: 13px 22px; border: 0; border-radius: 999px; background: #E8613C; color: #1C1714; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.16s ease, background 0.16s ease;" style-hover="background:#F58A6A;transform:translateY(-1px)">Ask the agent →</button>
+          <a href="https://x.com/EfrainGalvis1" target="_blank" rel="noopener" style="padding: 13px 22px; border: 1px solid #3B322C; border-radius: 999px; color: #D6CBC2; font-size: 14px; font-weight: 500; transition: border-color 0.16s ease;" style-hover="border-color:#8E8177;color:#F3EDE7">Message on X</a>
+        </div>
+
+        <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: #857A71; margin: 0 0 18px; padding-bottom: 14px; border-bottom: 1px solid #2B2320;">What I take on</p>
+        <ol style="list-style: none; margin: 0; padding: 0; display: grid; gap: 2px;">
+          <li style="display: grid; grid-template-columns: 34px 1fr; gap: 14px; padding: 16px 0; border-bottom: 1px solid #241E1A;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #E8613C; padding-top: 3px;">01</span>
+            <div>
+              <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 5px;">Becoming an AI-driven company</h3>
+              <p style="font-size: 14px; line-height: 1.55; color: #8E8177; margin: 0; text-wrap: pretty;">Further than automating a few processes with workflows. How the company works, decides, and builds when AI is part of the default way of operating — and which parts should stay human.</p>
+            </div>
+          </li>
+          <li style="display: grid; grid-template-columns: 34px 1fr; gap: 14px; padding: 16px 0; border-bottom: 1px solid #241E1A;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #E8613C; padding-top: 3px;">02</span>
+            <div>
+              <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 5px;">Agents your users can talk to</h3>
+              <p style="font-size: 14px; line-height: 1.55; color: #8E8177; margin: 0; text-wrap: pretty;">Putting your agents in front of the people who use your product, inside the app — not locked in an internal tool. Tool design, retrieval, memory, and the evaluation that makes them reliable enough to ship.</p>
+            </div>
+          </li>
+          <li style="display: grid; grid-template-columns: 34px 1fr; gap: 14px; padding: 16px 0; border-bottom: 1px solid #241E1A;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #E8613C; padding-top: 3px;">03</span>
+            <div>
+              <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 5px;">AI-DLC — AI-driven development life cycle</h3>
+              <p style="font-size: 14px; line-height: 1.55; color: #8E8177; margin: 0; text-wrap: pretty;">With the right tools, one person can cover what used to take a whole engineering team. I set up that way of working with you: where AI sits in each stage, and where a human still has to decide.</p>
+            </div>
+          </li>
+          <li style="display: grid; grid-template-columns: 34px 1fr; gap: 14px; padding: 16px 0; border-bottom: 1px solid #241E1A;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #E8613C; padding-top: 3px;">04</span>
+            <div>
+              <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 5px;">Good practice in how you use AI</h3>
+              <p style="font-size: 14px; line-height: 1.55; color: #8E8177; margin: 0; text-wrap: pretty;">Evaluation, guardrails, cost, and knowing how a system should fail. Also applied machine learning when a learned model is the right tool, rather than a language model by reflex.</p>
+            </div>
+          </li>
+          <li style="display: grid; grid-template-columns: 34px 1fr; gap: 14px; padding: 16px 0;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #E8613C; padding-top: 3px;">05</span>
+            <div>
+              <h3 style="font-size: 16px; font-weight: 600; margin: 0 0 5px;">Reviews and pairing</h3>
+              <p style="font-size: 14px; line-height: 1.55; color: #8E8177; margin: 0; text-wrap: pretty;">Short engagements to unstick a problem: review an approach, sit with your team, or help you choose what not to build.</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <section style="align-self: stretch;">
+        <div style="position: sticky; top: 92px; max-height: calc(100vh - 108px); display: flex; flex-direction: column;">
+        <div style="display: flex; flex-direction: column; min-height: 0; border: 1px solid #3B322C; border-radius: 16px; background: #17120F; overflow: hidden; box-shadow: 0 30px 70px -40px rgba(0,0,0,0.9);">
+
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 16px; border-bottom: 1px solid #2B2320; background: #14100D;">
+            <div style="display: flex; align-items: center; gap: 9px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #8E8177;">
+              <span style="width: 7px; height: 7px; border-radius: 50%; background: #E8613C;"></span>
+              agent
+            </div>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8A7E75;">{{ statusLine }}</span>
+          </div>
+
+          <sc-if value="{{ needsIntake }}" hint-placeholder-val="{{ true }}">
+            <div class="om-scroll" style="padding: 22px 22px 20px; overflow-y: auto; min-height: 0;">
+              <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #E8613C; margin: 0 0 12px;">Before we start</p>
+              <p style="font-size: 19px; line-height: 1.4; margin: 0 0 4px; font-weight: 500;">Who am I talking to?</p>
+              <p style="font-size: 14px; line-height: 1.55; color: #8E8177; margin: 0 0 18px;">One tap. It changes what the agent leads with — and it tells me who stopped by.</p>
+
+              <div style="display: grid; gap: 7px; margin-bottom: 18px;">
+                <sc-for list="{{ roles }}" as="r" hint-placeholder-count="4">
+                  <button type="button" onClick="{{ r.pick }}" style="display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 12px 15px; border-radius: 11px; border: 1px solid #302823; background: #1C1714; cursor: pointer; transition: border-color 0.15s ease, background 0.15s ease;" style-hover="border-color:#E8613C;background:#221B17">
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E8613C; width: 18px;">{{ r.key }}</span>
+                    <span style="flex: 1;">
+                      <span style="display: block; font-size: 14px; font-weight: 600; color: #F3EDE7;">{{ r.title }}</span>
+                      <span style="display: block; font-size: 12.5px; color: #8E8177; margin-top: 2px;">{{ r.hint }}</span>
+                    </span>
+                    <span style="color: #857A71; font-size: 14px;">→</span>
+                  </button>
+                </sc-for>
+              </div>
+
+              <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px;">
+                <input type="text" value="{{ visitorName }}" onChange="{{ onName }}" placeholder="Name (optional)" style="min-width: 0; width: 100%; padding: 12px 13px; border-radius: 9px; border: 1px solid #302823; background: #14100D; font-size: 13.5px; color: #F3EDE7;" />
+                <input type="email" value="{{ visitorEmail }}" onChange="{{ onEmail }}" placeholder="Email (optional)" style="min-width: 0; width: 100%; padding: 12px 13px; border-radius: 9px; border: 1px solid #302823; background: #14100D; font-size: 13.5px; color: #F3EDE7;" />
+              </div>
+              <p style="font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6; color: #8A7E75; margin: 12px 0 0;">Stays in your browser. It only leaves if you send the brief.</p>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ started }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-direction: column; min-height: 0;">
+              <div class="om-scroll" ref="{{ logRef }}" style="flex: 1; min-height: 180px; max-height: min(52vh, 480px); overflow-y: auto; padding: 20px 22px; display: flex; flex-direction: column; gap: 20px;">
+                <sc-for list="{{ messages }}" as="m" hint-placeholder-count="2">
+                  <div style="animation: rise 0.28s ease both;">
+
+                    <sc-if value="{{ m.isUser }}" hint-placeholder-val="{{ false }}">
+                      <div style="display: flex; justify-content: flex-end;">
+                        <p style="max-width: 88%; margin: 0; padding: 11px 15px; border-radius: 13px 13px 4px 13px; background: #E8613C; color: #1C1714; font-size: 14.5px; line-height: 1.5; font-weight: 500;">{{ m.text }}</p>
+                      </div>
+                    </sc-if>
+
+                    <sc-if value="{{ m.hasTrace }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-bottom: 12px; border-left: 2px solid #302823; padding-left: 13px; display: grid; gap: 10px;">
+                        <sc-for list="{{ m.trace }}" as="t" hint-placeholder-count="1">
+                          <div style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.6;">
+                            <p style="margin: 0 0 3px; color: #857A71; font-style: italic;">{{ t.thought }}</p>
+                            <p style="margin: 0; color: #A79A90;"><span style="color: #E8613C;">→ </span>{{ t.call }}</p>
+                            <p style="margin: 2px 0 0; color: #8E8177;">{{ t.result }}</p>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+
+                    <sc-if value="{{ m.isAgent }}" hint-placeholder-val="{{ false }}">
+                      <p style="margin: 0; font-size: 14.5px; line-height: 1.62; color: #E4DBD3; white-space: pre-wrap; text-wrap: pretty;">{{ m.text }}</p>
+                    </sc-if>
+
+                    <sc-if value="{{ m.hasChips }}" hint-placeholder-val="{{ false }}">
+                      <div style="display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px;">
+                        <sc-for list="{{ m.chips }}" as="c" hint-placeholder-count="3">
+                          <button type="button" onClick="{{ c.pick }}" style="padding: 8px 13px; border-radius: 999px; border: 1px solid #302823; background: transparent; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #A79A90; cursor: pointer; transition: all 0.15s ease;" style-hover="border-color:#E8613C;color:#F3EDE7">{{ c.label }}</button>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+
+                    <sc-if value="{{ m.hasBrief }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top: 16px; border: 1px solid #3B322C; border-radius: 13px; overflow: hidden; background: #1C1714;">
+                        <div style="padding: 13px 16px; border-bottom: 1px dashed #302823; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #7CE0A3;">Brief drafted</span>
+                          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8A7E75;">{{ m.brief.meta }}</span>
+                        </div>
+                        <div style="padding: 16px;">
+                          <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #8E8177; margin: 0 0 10px;">Subject: {{ m.brief.subject }}</p>
+                          <p style="font-size: 13.5px; line-height: 1.65; color: #D6CBC2; margin: 0 0 18px; white-space: pre-wrap;">{{ m.brief.body }}</p>
+                          <a href="{{ m.brief.mailto }}" style="display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border-radius: 999px; background: #E8613C; color: #1C1714; font-size: 13.5px; font-weight: 600;" style-hover="background:#F58A6A">Open in email →</a>
+                        </div>
+                      </div>
+                    </sc-if>
+
+                  </div>
+                </sc-for>
+
+                <sc-if value="{{ thinking }}" hint-placeholder-val="{{ false }}">
+                  <p style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #857A71;">{{ thinkingLabel }}<span style="animation: blink 1s steps(1) infinite;">▍</span></p>
+                </sc-if>
+              </div>
+
+              <div style="border-top: 1px solid #2B2320; padding: 12px 14px; display: flex; align-items: flex-end; gap: 10px; background: #14100D;">
+                <textarea ref="{{ inputRef }}" value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ onKey }}" rows="2" placeholder="Ask about the work, or describe your problem…" style="flex: 1; min-width: 0; resize: none; min-height: 66px; max-height: 120px; overflow-y: auto; padding: 11px 12px; border-radius: 9px; border: 1px solid #302823; background: #1C1714; font-size: 14px; line-height: 1.5;"></textarea>
+                <button type="button" onClick="{{ send }}" style="flex: none; width: 40px; height: 40px; border: 0; border-radius: 9px; background: #E8613C; color: #1C1714; font-size: 15px; font-weight: 700; cursor: pointer;" style-hover="background:#F58A6A">↑</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ offline }}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 0; padding: 11px 16px; border-top: 1px solid #2B2320; background: #221A16; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6; color: #C9A08C;">{{ offlineNote }}</p>
+          </sc-if>
+        </div>
+
+        <p style="font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.7; color: #8A7E75; margin: 12px 2px 0;">Every lookup the agent makes is printed above. Nothing hidden, nothing invented — same way I work.</p>
+        </div>
+      </section>
+    </div>
+
+    <section id="process" style="margin-top: clamp(72px, 10vw, 128px);">
+      <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: #E8613C; margin: 0 0 16px;">How it goes</p>
+      <h2 style="font-size: clamp(28px, 3.6vw, 44px); line-height: 1.08; letter-spacing: -0.02em; font-weight: 600; margin: 0 0 16px; max-width: 22ch;">Small scope. Close loop. Something you can use.</h2>
+      <p style="font-size: 16px; line-height: 1.6; color: #8E8177; margin: 0 0 44px; max-width: 52ch; text-wrap: pretty;">No theater, no fake case studies. A straightforward way of working so you always know what we are doing and why.</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1px; background: #2B2320; border-top: 1px solid #2B2320; border-bottom: 1px solid #2B2320;">
+        <div style="background: #1C1714; padding: 24px 22px 28px;">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #857A71;">Step 01</span>
+          <h3 style="font-size: 16.5px; font-weight: 600; margin: 12px 0 8px;">Tell me the problem</h3>
+          <p style="font-size: 13.5px; line-height: 1.6; color: #8E8177; margin: 0; text-wrap: pretty;">The agent above is enough. What you are trying to ship, where it is stuck, and what good would look like.</p>
+        </div>
+        <div style="background: #1C1714; padding: 24px 22px 28px;">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #857A71;">Step 02</span>
+          <h3 style="font-size: 16.5px; font-weight: 600; margin: 12px 0 8px;">We agree on a useful slice</h3>
+          <p style="font-size: 13.5px; line-height: 1.6; color: #8E8177; margin: 0; text-wrap: pretty;">A clear piece of work with a boundary: a prototype, a review, a feature, a set of evaluations. Not an open-ended retainer unless that is what you want.</p>
+        </div>
+        <div style="background: #1C1714; padding: 24px 22px 28px;">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #857A71;">Step 03</span>
+          <h3 style="font-size: 16.5px; font-weight: 600; margin: 12px 0 8px;">I work in the open with you</h3>
+          <p style="font-size: 13.5px; line-height: 1.6; color: #8E8177; margin: 0; text-wrap: pretty;">You see the thinking as it happens — assumptions, dead ends, and the next decision. No disappearing for six weeks.</p>
+        </div>
+        <div style="background: #1C1714; padding: 24px 22px 28px;">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #857A71;">Step 04</span>
+          <h3 style="font-size: 16.5px; font-weight: 600; margin: 12px 0 8px;">You keep the work</h3>
+          <p style="font-size: 13.5px; line-height: 1.6; color: #8E8177; margin: 0; text-wrap: pretty;">Code, notes, or a recommendation you can act on. The point is that your team can continue without me if that is the right call.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="about" style="margin-top: clamp(72px, 10vw, 128px); display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: clamp(32px, 5vw, 72px); align-items: start;">
+      <div>
+        <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: #E8613C; margin: 0 0 16px;">About</p>
+        <h2 style="font-size: clamp(28px, 3.6vw, 44px); line-height: 1.08; letter-spacing: -0.02em; font-weight: 600; margin: 0 0 22px; max-width: 20ch;">I build AI systems that have to hold up in production.</h2>
+        <p style="font-size: 16px; line-height: 1.65; color: #D6CBC2; margin: 0 0 16px; max-width: 46ch; text-wrap: pretty;">I am Efrain Galvis. I work remotely with teams wherever they are, on consulting and freelance engagements — helping a company put AI into a product, or make sense of AI it has already started.</p>
+        <p style="font-size: 16px; line-height: 1.65; color: #8E8177; margin: 0; max-width: 46ch; text-wrap: pretty;">I like the craft more than the pitch: models, language systems, the messy middle between a paper and production. If that sounds like the kind of person you want on a problem, say hello.</p>
+      </div>
+      <div id="contact" style="border: 1px solid #2B2320; border-radius: 16px; padding: 28px 26px;">
+        <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: #E8613C; margin: 0 0 16px;">Contact</p>
+        <h3 style="font-size: 23px; line-height: 1.2; font-weight: 600; margin: 0 0 14px; letter-spacing: -0.01em;">Write when you have a real problem.</h3>
+        <p style="font-size: 14.5px; line-height: 1.6; color: #8E8177; margin: 0 0 24px; text-wrap: pretty;">Fastest is the agent — it drafts the email for you. Otherwise X for a quick word, GitHub for public work, or write directly.</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 9px;">
+          <button type="button" onClick="{{ focusAgent }}" style="padding: 11px 18px; border: 0; border-radius: 999px; background: #E8613C; color: #1C1714; font-size: 13.5px; font-weight: 600; cursor: pointer;" style-hover="background:#F58A6A">Use the agent</button>
+          <a href="mailto:galvisefrain@gmail.com" style="padding: 11px 18px; border: 1px solid #3B322C; border-radius: 999px; color: #D6CBC2; font-size: 13.5px;" style-hover="border-color:#8E8177">Email</a>
+          <a href="https://x.com/EfrainGalvis1" target="_blank" rel="noopener" style="padding: 11px 18px; border: 1px solid #3B322C; border-radius: 999px; color: #D6CBC2; font-size: 13.5px;" style-hover="border-color:#8E8177">X</a>
+          <a href="https://github.com/efrain-galvis" target="_blank" rel="noopener" style="padding: 11px 18px; border: 1px solid #3B322C; border-radius: 999px; color: #D6CBC2; font-size: 13.5px;" style-hover="border-color:#8E8177">GitHub</a>
+        </div>
+        <sc-if value="{{ openToRoles }}" hint-placeholder-val="{{ true }}">
+          <p style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.7; color: #8A7E75; margin: 24px 0 0; padding-top: 18px; border-top: 1px solid #241E1A;">Open to full-time roles as well as consulting. Ask the agent about it.</p>
+        </sc-if>
+      </div>
+    </section>
+
+    <footer style="margin-top: clamp(64px, 8vw, 104px); padding: 26px 0 34px; border-top: 1px solid #2B2320; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #8A7E75;">
+      <span>© 2026 Efrain Galvis · Working remotely, any timezone</span>
+      <a href="#top" style="color: #8A7E75;" style-hover="color:#F3EDE7">Back to top ↑</a>
+    </footer>
+  </main>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;availability&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Taking on work&quot;,&quot;Limited availability&quot;,&quot;Booked — waitlist&quot;],&quot;default&quot;:&quot;Taking on work&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Agent&quot;},&quot;openToRoles&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Agent&quot;}}">
+/* ─────────────────────────────────────────────────────────────
+   KNOWLEDGE — the agent answers ONLY from this object.
+   Paste your CV facts here. Anything missing, the agent will
+   say it does not know and offer to pass the question along.
+   ───────────────────────────────────────────────────────────── */
+const KNOWLEDGE = {
+  identity: "Efrain Galvis. Applied AI — consulting, freelance, and open to full-time roles. Works remotely with teams in any timezone. He builds AI systems that have to hold up in production, and prefers the craft over the pitch: models, language systems, the messy middle between a paper and production. Do not describe his location beyond 'works remotely, any timezone' unless the visitor asks directly.",
+  services: "01 Becoming an AI-driven company — further than automating a few processes with workflows; how the company works, decides and builds when AI is part of the default way of operating, and which parts should stay human. 02 Agents your users can talk to — putting a company's agents in front of the people who use the product, inside the app rather than locked in an internal tool; tool design, retrieval, memory and the evaluation that makes them reliable enough to ship. 03 AI-DLC, the AI-driven development life cycle — with the right tools one person can cover what used to take a whole engineering team; Efrain sets up that way of working with you, defining where AI sits in each stage and where a human still has to decide. 04 Good practice in how you use AI — evaluation, guardrails, cost, and knowing how a system should fail; also applied machine learning when a learned model is the right tool rather than a language model by reflex. 05 Reviews and pairing — short engagements to unstick a problem, review an approach, sit with the team, or help decide what not to build.",
+  process: "Step 1: you describe the problem — what you are shipping, where it is stuck, what good looks like. Step 2: agree on a useful slice with a boundary (a prototype, a review, a feature, a set of evaluations) rather than an open-ended retainer, unless a retainer is what you want. Step 3: he works in the open — you see assumptions, dead ends, and the next decision as they happen. Step 4: you keep the work — code, notes, or a recommendation your team can act on without him.",
+  engagement: "Freelance and consulting engagements, plus openness to full-time roles. Small scope, close loop. No fake case studies and no theater.",
+  contact: "Email galvisefrain@gmail.com. X: x.com/EfrainGalvis1 (fastest for a quick word). GitHub: github.com/efrain-galvis for public work.",
+  // TODO Efrain: paste CV specifics here — years of experience, stacks,
+  // named projects and outcomes, education, languages, rate bands, notice period.
+  cv: ""
+};
+
+const EMAIL = "galvisefrain@gmail.com";
+
+const ROLES = [
+  { key: "01", id: "founder", title: "Founder or CTO", hint: "I have a product problem",
+    opener: "Good — that is the shortest path. Tell me what you are shipping and where it is stuck, and I will turn it into a scoped slice of work and draft the email to Efrain.",
+    chips: ["What does becoming AI-driven mean?", "Can he ship an agent our users talk to?", "What is AI-DLC?"] },
+  { key: "02", id: "pm", title: "Product manager", hint: "Figuring out where AI fits",
+    opener: "Then the useful question is usually where AI belongs in your product at all. Describe the workflow you are looking at and I will tell you how Efrain would frame it.",
+    chips: ["Where does AI actually belong?", "How do you evaluate an AI feature?", "What does a first slice look like?"] },
+  { key: "03", id: "eng", title: "Engineering lead", hint: "Evaluating him as a contractor",
+    opener: "Fair. Ask me anything about how he works — scope, reliability, evals, handover. I answer from his own material and I will show you every lookup.",
+    chips: ["How does he handle reliability and evals?", "What happens at handover?", "What is his stack?"] },
+  { key: "04", id: "recruiter", title: "Recruiter or hiring", hint: "Looking at him for a role",
+    opener: "He is open to full-time roles as well as consulting. Tell me about the role — scope, team, and stack — and I will draft the intro email for you.",
+    chips: ["Is he open to full-time?", "What is his background?", "How does he work with remote teams?"] }
+];
+
+const SYSTEM = ({ role, name }) => `You are the agent on Efrain Galvis's personal site. You speak for him in the third person, warmly and briefly — like a sharp colleague, never a sales bot.
+
+VISITOR: ${role}${name ? `, name: ${name}` : ""}.
+
+HARD RULES
+- Answer ONLY from what the lookup tool returns. Never invent projects, clients, metrics, rates, dates, or credentials.
+- If the knowledge does not cover it, say so plainly in one line and offer to put the question in the brief for Efrain to answer himself.
+- Always call a tool before answering, and always pass a short first-person "thought" (max 12 words) explaining why.
+- Keep replies to 2-4 short sentences. No bullet lists unless asked. No emoji. No exclamation marks.
+- When the visitor has described a real problem or a real role, call draft_brief. Do not ask more than two clarifying questions first.
+- Never claim to be Efrain. You are his agent.`;
+
+class Component extends DCLogic {
+  state = {
+    role: null, name: "", email: "", draft: "",
+    messages: [], thinking: false, thinkingLabel: "thinking", offline: false, offlineNote: ""
+  };
+
+  logRef = React.createRef();
+  inputRef = React.createRef();
+
+  componentDidMount() {
+    try {
+      const saved = JSON.parse(localStorage.getItem("eg.visitor") || "null");
+      if (saved && saved.name !== undefined) this.setState({ name: saved.name || "", email: saved.email || "" });
+    } catch (e) {}
+  }
+
+  componentDidUpdate() {
+    const el = this.logRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }
+
+  save() {
+    try {
+      localStorage.setItem("eg.visitor", JSON.stringify({
+        name: this.state.name, email: this.state.email, role: this.state.role, at: new Date().toISOString()
+      }));
+    } catch (e) {}
+  }
+
+  pickRole = (r) => {
+    this.save();
+    this.setState({
+      role: r.id,
+      messages: [{ role: "agent", text: r.opener, chips: r.chips }]
+    });
+    setTimeout(() => this.inputRef.current && this.inputRef.current.focus(), 60);
+  };
+
+  focusAgent = () => {
+    const el = this.inputRef.current;
+    if (el) { el.focus(); return; }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  trace(entry) {
+    this.setState(s => {
+      const msgs = s.messages.slice();
+      const last = msgs[msgs.length - 1];
+      if (last && last.role === "trace") last.trace = last.trace.concat([entry]);
+      else msgs.push({ role: "trace", trace: [entry] });
+      return { messages: msgs };
+    });
+  }
+
+  tools() {
+    return [
+      {
+        name: "lookup",
+        description: "Search Efrain's own material. Sections: identity, services, process, engagement, contact, cv. Returns the section text, or a not-found note.",
+        input_schema: {
+          type: "object",
+          properties: {
+            thought: { type: "string", description: "Short first-person reason for this lookup, max 12 words." },
+            section: { type: "string", enum: ["identity", "services", "process", "engagement", "contact", "cv"] },
+            query: { type: "string", description: "What you are looking for in that section." }
+          },
+          required: ["thought", "section", "query"]
+        },
+        run: async ({ thought, section, query }) => {
+          const text = KNOWLEDGE[section] || "";
+          const found = text && text.trim().length > 0;
+          this.trace({
+            thought,
+            call: `lookup(section="${section}", q="${query}")`,
+            result: found ? `${text.length} chars returned` : "empty — not covered in his material"
+          });
+          return found ? text : `NOT_FOUND: the "${section}" section is empty. Tell the visitor this is not something you can answer, and offer to include the question in the brief.`;
+        }
+      },
+      {
+        name: "check_availability",
+        description: "Check whether Efrain is currently taking on work.",
+        input_schema: {
+          type: "object",
+          properties: { thought: { type: "string" } },
+          required: ["thought"]
+        },
+        run: async ({ thought }) => {
+          const status = this.props.availability ?? "Taking on work";
+          this.trace({ thought, call: "check_availability()", result: status });
+          return `Current status: ${status}. He works in small, bounded engagements${this.props.openToRoles === false ? "" : ", and is also open to full-time roles"}.`;
+        }
+      },
+      {
+        name: "draft_brief",
+        description: "Draft the email brief to Efrain. Call this once the visitor has described a real problem or role.",
+        input_schema: {
+          type: "object",
+          properties: {
+            thought: { type: "string" },
+            subject: { type: "string", description: "Email subject, under 60 characters." },
+            context: { type: "string", description: "What the visitor is trying to do, in their own terms. 1-2 sentences." },
+            slice: { type: "string", description: "The concrete slice of work you propose. 1-2 sentences." },
+            open_questions: { type: "string", description: "Anything you could not answer, for Efrain to pick up. May be empty." }
+          },
+          required: ["thought", "subject", "context", "slice"]
+        },
+        run: async ({ thought, subject, context, slice, open_questions }) => {
+          const who = ROLES.find(r => r.id === this.state.role);
+          const lines = [
+            this.state.name ? `From: ${this.state.name}${this.state.email ? ` (${this.state.email})` : ""}` : null,
+            who ? `Role: ${who.title}` : null,
+            "",
+            `Context: ${context}`,
+            "",
+            `Proposed slice: ${slice}`,
+            open_questions && open_questions.trim() ? `\nOpen questions: ${open_questions}` : null,
+            "",
+            "— drafted by the agent on efrain-galvis.info"
+          ].filter(l => l !== null);
+          const body = lines.join("\n");
+          const brief = {
+            subject, body,
+            meta: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
+            mailto: `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+          };
+          this.trace({ thought, call: "draft_brief()", result: `subject: ${subject}` });
+          this.setState(s => ({ messages: s.messages.concat([{ role: "brief", brief }]) }));
+          return "Brief rendered on the page with a one-click email button. Tell the visitor it is ready and that they can edit it before sending.";
+        }
+      }
+    ];
+  }
+
+  ask = async (text) => {
+    const who = ROLES.find(r => r.id === this.state.role);
+    const history = this.state.messages
+      .filter(m => m.role === "user" || m.role === "agent")
+      .map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.text }));
+
+    this.setState(s => ({
+      messages: s.messages.concat([{ role: "user", text }]),
+      thinking: true, thinkingLabel: "reading your message", draft: ""
+    }));
+
+    if (!(window.claude && window.claude.complete)) {
+      this.setState({
+        thinking: false, offline: true,
+        offlineNote: "Agent endpoint not reachable from this host. Point window.claude.complete at your own API route to go live.",
+        messages: this.state.messages.concat([{ role: "user", text }, { role: "agent", text: "I cannot reach my model from this host. Use the email button below and Efrain will answer directly." }])
+      });
+      return;
+    }
+
+    try {
+      const reply = await window.claude.complete({
+        model: "claude-sonnet-4-5",
+        max_tokens: 900,
+        system: SYSTEM({ role: who ? who.title : "unspecified", name: this.state.name }),
+        tools: this.tools(),
+        messages: history.concat([{ role: "user", content: text }])
+      });
+      this.setState(s => ({
+        thinking: false,
+        messages: s.messages.concat([{ role: "agent", text: (reply || "").trim() || "I do not have that in his material. Want me to put the question in the brief?" }])
+      }));
+    } catch (err) {
+      this.setState(s => ({
+        thinking: false, offline: true,
+        offlineNote: `Model call failed: ${err && err.message ? err.message : "unknown error"}`,
+        messages: s.messages.concat([{ role: "agent", text: "That call failed on my side. Email works: galvisefrain@gmail.com." }])
+      }));
+    }
+  };
+
+  send = () => {
+    const t = this.state.draft.trim();
+    if (!t || this.state.thinking) return;
+    const el = this.inputRef.current;
+    if (el) el.style.height = "66px";
+    this.ask(t);
+  };
+
+  renderVals() {
+    const started = !!this.state.role;
+    const messages = this.state.messages.map(m => ({
+      isUser: m.role === "user",
+      isAgent: m.role === "agent",
+      hasTrace: m.role === "trace",
+      hasBrief: m.role === "brief",
+      hasChips: !!(m.chips && m.chips.length),
+      text: m.text || "",
+      trace: m.trace || [],
+      brief: m.brief || {},
+      chips: (m.chips || []).map(label => ({ label, pick: () => this.ask(label) }))
+    }));
+
+    return {
+      availabilityLabel: this.props.availability ?? "Taking on work",
+      openToRoles: this.props.openToRoles ?? true,
+      statusLine: started ? "grounded in his own material" : "waiting",
+      needsIntake: !started,
+      started,
+      roles: ROLES.map(r => ({ ...r, pick: () => this.pickRole(r) })),
+      visitorName: this.state.name,
+      visitorEmail: this.state.email,
+      onName: e => this.setState({ name: e.target.value }),
+      onEmail: e => this.setState({ email: e.target.value }),
+      messages,
+      thinking: this.state.thinking,
+      thinkingLabel: this.state.thinkingLabel + " ",
+      offline: this.state.offline,
+      offlineNote: this.state.offlineNote,
+      draft: this.state.draft,
+      onDraft: e => {
+        const el = e.target;
+        el.style.height = "auto";
+        el.style.height = Math.min(Math.max(el.scrollHeight, 66), 120) + "px";
+        this.setState({ draft: el.value });
+      },
+      onKey: e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); this.send(); } },
+      send: this.send,
+      focusAgent: this.focusAgent,
+      logRef: this.logRef,
+      inputRef: this.inputRef
+    };
+  }
+}
+
+</script>
+</body>
+</html>
