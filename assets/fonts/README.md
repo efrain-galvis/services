@@ -1,6 +1,6 @@
 # Self-hosted fonts
 
-Both families are licensed under the **SIL Open Font License 1.1**, which
+All families are licensed under the **SIL Open Font License 1.1**, which
 permits self-hosting and redistribution but requires the licence and copyright
 notice to travel with the files. Those are in `licenses/`:
 
@@ -8,6 +8,8 @@ notice to travel with the files. Those are in `licenses/`:
 | --- | --- | --- |
 | Fraunces | `licenses/Fraunces-OFL.txt` | Copyright 2018 The Fraunces Project Authors |
 | Source Sans 3 | `licenses/SourceSans3-LICENSE.md` | Copyright 2010-2024 Adobe, with Reserved Font Name 'Source' |
+| Libre Franklin | `licenses/HandoffFonts-OFL.txt` | Copyright 2020 The Libre Franklin Project Authors |
+| JetBrains Mono | `licenses/HandoffFonts-OFL.txt` | Copyright 2020 The JetBrains Mono Project Authors |
 
 Neither family is renamed or modified here, so no Reserved Font Name applies to
 what we serve.
@@ -30,6 +32,14 @@ The two CSS requests used:
 https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,100..900,0..100,0..1;1,9..144,100..900,0..100,0..1&display=swap
 https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@200..900&display=swap
 ```
+
+The current handoff uses Libre Franklin 400–700 and JetBrains Mono 400–500.
+Their variable WOFF2 `latin` and `latin-ext` subsets were fetched from Google
+Fonts CSS API revisions Libre Franklin `v20` and JetBrains Mono `v24` on
+**2026-09-05**. Upstream projects:
+
+- https://github.com/googlefonts/Libre-Franklin
+- https://github.com/JetBrains/JetBrainsMono
 
 Both were requested with a current-Chrome User-Agent so the API returns woff2.
 Only the `latin` and `latin-ext` subsets are kept; the `unicode-range` values in
@@ -59,6 +69,10 @@ e9521563d0935c9bda4277e242cc88c75993a77878f5f7eed537989e94f976c9  fraunces-norma
 7e744849028e2219e2aa1bc467dc4032980dc4487c9c3da3010081cd72d3b103  fraunces-normal-latin.woff2
 a85a7459bdb3cdc1136751e151a506bae653fc29ada3ca86237477df6f1b59e6  source-sans-3-normal-latin-ext.woff2
 7a19a7027e125257d310c6dbd78ae3a30b5ea1e3794d60b12bb28227a003bfda  source-sans-3-normal-latin.woff2
+db5ff4db83e580426280e9337a58dc57d3a83784a1b03ad80914651594441d52  jetbrains-mono-latin-ext.woff2
+83c005d49d8a6a50474c73a5a36ac0468076e9c4a29da7bdb14995d80560a5be  jetbrains-mono-latin.woff2
+61216d8e3efe8c5a26861f8b92dc9a922645c662da95c37bf787a4a774a5c8d5  libre-franklin-latin-ext.woff2
+52e605852c72cc2df1473df1fb7f26a3a0be58e31835bc8f33f29b1918c82cbd  libre-franklin-latin.woff2
 ```
 
 ## Updating
