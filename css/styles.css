@@ -682,10 +682,6 @@ h1 {
     gap: 12px;
   }
 
-  .availability {
-    max-width: 9ch;
-  }
-
   .hero-grid,
   .about-grid {
     grid-template-columns: minmax(0, 1fr);
