@@ -13,7 +13,7 @@
   const CHAT_TIMEOUT_MS = 25000;
   const MEETINGS_TIMEOUT_MS = 20000;
   const LIMIT_NOTE =
-    "That is the limit for this chat session. Use the contact form to keep the conversation going.";
+    "That is the limit for this chat session. Email Efrain directly to keep the conversation going.";
   const WELCOME =
     "Ask about Efrain's AI consulting — product work, LLM systems, or a short review. What are you trying to ship?";
 
@@ -372,15 +372,15 @@
 
   function humanError(res) {
     if (!res) {
-      return "Could not reach the assistant. Check your connection, or use the contact form.";
+      return "Could not reach the assistant. Check your connection, or email Efrain directly.";
     }
     if (res.status === 401) {
-      return "This chat is not authorized right now. Try again later, or use the contact form.";
+      return "This chat is not authorized right now. Try again later, or email Efrain directly.";
     }
     if (res.status === 429) {
-      return "This chat has reached its limit for now. Try later, or write via the contact form.";
+      return "This chat has reached its limit for now. Try later, or email Efrain directly.";
     }
-    return "The assistant could not reply just now. Try again, or use the contact form.";
+    return "The assistant could not reply just now. Try again, or email Efrain directly.";
   }
 
   function isAbortError(err) {
@@ -486,11 +486,11 @@
         addMessage("error", humanError(result.res));
       } else {
         const reply = result.data && typeof result.data.reply === "string" ? result.data.reply.trim() : "";
-        addMessage("assistant", reply || "No reply came back. Try again, or use the contact form.");
+        addMessage("assistant", reply || "No reply came back. Try again, or email Efrain directly.");
       }
     } catch (err) {
       if (isAbortError(err)) {
-        addMessage("error", "The assistant took too long. Try again, or use the contact form.");
+        addMessage("error", "The assistant took too long. Try again, or email Efrain directly.");
       } else {
         addMessage("error", humanError(null));
       }
@@ -533,25 +533,25 @@
     try {
       const result = await postJson("/v1/meetings", payload, MEETINGS_TIMEOUT_MS);
       if (!result.res.ok) {
-        let note = "Could not send the request just now. Use the contact form on this page instead.";
+        let note = "Could not send the request just now. Email Efrain directly instead.";
         if (result.res.status === 401) {
-          note = "This request is not authorized right now. Use the contact form on this page instead.";
+          note = "This request is not authorized right now. Email Efrain directly instead.";
         } else if (result.res.status === 429) {
-          note = "Too many requests right now. Try later, or use the contact form on this page.";
+          note = "Too many requests right now. Try later, or email Efrain directly.";
         }
         bookStatus.textContent = note;
         bookStatus.classList.add("is-err");
       } else {
-        bookStatus.textContent = "Thanks — the request was sent. You can also write via the contact form if you prefer email.";
+        bookStatus.textContent = "Thanks — the request was sent. You can also email Efrain directly if you prefer.";
         bookStatus.classList.add("is-ok");
         bookForm.reset();
         bookTz.value = defaultTz;
       }
     } catch (err) {
       if (isAbortError(err)) {
-        bookStatus.textContent = "The request took too long. Use the contact form on this page instead.";
+        bookStatus.textContent = "The request took too long. Email Efrain directly instead.";
       } else {
-        bookStatus.textContent = "Could not reach the server. Use the contact form on this page instead.";
+        bookStatus.textContent = "Could not reach the server. Email Efrain directly instead.";
       }
       bookStatus.classList.add("is-err");
     } finally {
