@@ -1,0 +1,25 @@
+# Gitleaks configuration for the "services" repository (efrain-galvis.info).
+#
+# [extend] useDefault = true means we EXTEND gitleaks' built-in default
+# ruleset rather than replace it, so a genuinely new secret anywhere else
+# in this repo (now or in the future) still fails the scan.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = '''
+js/agent.js SITE_TOKEN is a deliberately PUBLIC, client-side value: it
+ships inside JavaScript served to every visitor of this GitHub Pages
+site, so anyone can read it from the browser or "view source" with no
+authentication at all. It is documented (see SECURITY-TODO.md and the
+comment above the constant in js/agent.js) as a speed bump against naive
+`curl` scraping of the chat API -- explicitly NOT a secret, and safe to
+have in the repo and its history.
+
+This allowlist entry is scoped to exactly that file AND that exact
+value (condition = "AND"), so it does not weaken detection of any other,
+real secret anywhere else in this repository.
+'''
+condition = "AND"
+paths = ['''^js/agent\.js$''']
+regexes = ['''4f4ec8bc502fe37e4de9805169f4cb89''']

@@ -1,0 +1,86 @@
+name: security-scanners
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-scanners-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GITLEAKS_VERSION: "8.30.1"
+  # sha256 of gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz, from the
+  # release's published *_checksums.txt. Verified before the binary is
+  # ever executed -- see the "Install gitleaks" step below.
+  GITLEAKS_SHA256_LINUX_X64: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+
+jobs:
+  gitleaks:
+    name: Gitleaks secret scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        run: |
+          set -euo pipefail
+          curl -fsSL -o gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256_LINUX_X64}  gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf gitleaks.tar.gz gitleaks
+          sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
+          rm -f gitleaks.tar.gz gitleaks
+          gitleaks version
+
+      - name: Run gitleaks
+        id: gitleaks
+        continue-on-error: true
+        # This repo's .gitleaks.toml (extends the default ruleset, plus a
+        # narrow allowlist for the documented-public SITE_TOKEN in
+        # js/agent.js) is auto-detected by gitleaks at the source root.
+        run: |
+          set +e
+          gitleaks detect \
+            --source . \
+            --report-format sarif \
+            --report-path results.sarif \
+            --redact \
+            --exit-code 1 \
+            --no-banner
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Upload SARIF report as build artifact
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: gitleaks-sarif
+          path: results.sarif
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload SARIF report to code scanning
+        if: always()
+        # Code scanning may not be enabled for this repository; a failure
+        # here must never mask (or be confused with) an actual leak.
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@faaca9a8f6edddba5725ffe5adefdab6669a2eca # v3.38.0
+        with:
+          sarif_file: results.sarif
+
+      - name: Enforce scanner result
+        if: steps.gitleaks.outputs.exit_code != '0'
+        run: |
+          echo "gitleaks exited with code ${{ steps.gitleaks.outputs.exit_code }} -- leaks were found. See the gitleaks-sarif artifact and the step above for details." >&2
+          exit 1
