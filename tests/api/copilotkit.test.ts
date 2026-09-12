@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   createCopilotKitEndpoint,
-} from "./copilotkit";
+} from "../../api/copilotkit.js";
 import type {
   VisitorRateLimiter,
   VisitorRateLimitResult,
-} from "./visitor-rate-limit";
+} from "../../api/visitor-rate-limit.js";
 
 process.env.COPILOTKIT_TELEMETRY_DISABLED = "true";
 
