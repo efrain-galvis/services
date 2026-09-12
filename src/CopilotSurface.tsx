@@ -144,6 +144,7 @@ function Chat({
 }
 
 export default function CopilotSurface(props: Props) {
+  const { onConnectionFailure } = props;
   const [surfaceError, setSurfaceError] = useState("");
   const pendingPrompt = useRef("");
   const handlePendingPrompt = useCallback((prompt: string) => {
@@ -152,14 +153,14 @@ export default function CopilotSurface(props: Props) {
   const handleProviderError = useCallback(
     (event: ProviderErrorEvent) => {
       if (CONNECTION_FAILURE_CODES.has(event.code)) {
-        props.onConnectionFailure(pendingPrompt.current);
+        onConnectionFailure(pendingPrompt.current);
         return;
       }
       setSurfaceError(
         "LYRA hit a temporary agent error. Your conversation is still here.",
       );
     },
-    [props.onConnectionFailure],
+    [onConnectionFailure],
   );
 
   return (
