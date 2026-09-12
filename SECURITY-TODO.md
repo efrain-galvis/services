@@ -4,9 +4,9 @@ Things that cannot be fixed from this repository. Each one needs a change in a
 console you own — GitHub, Railway, or your DNS registrar. Ordered by what buys
 the most safety per minute spent.
 
-The code-level work is already done and is not repeated here: the chat widget
-renders model output through `textContent` only and no longer has an
-`innerHTML` path, `index.html` carries a CSP and a referrer policy, the fonts
+The code-level work is already done and is not repeated here: the LYRA chat
+renders model output as React text nodes and has no `innerHTML` path, the
+generated `index.html` carries a CSP and a referrer policy, the fonts
 are self-hosted, and the chat has a length clamp, an in-flight lock, an abort
 timeout and a 25-turn cap that persists for the life of the browser tab.
 None of the chat guards are security controls — `curl` ignores every one of
@@ -25,7 +25,7 @@ is advisory; a request from `curl` skips all of it.
       `https://efrain-galvis.github.io` origin returns 200. The chat does not
       work at the canonical domain right now. Allow the apex origin, then drop
       the `github.io` one once the custom domain is the only entry point. Not
-      `*`. This is the control that makes the `X-Site-Token` in `js/agent.js`
+      `*`. This is the control that makes the `X-Site-Token` in `src/App.tsx`
       mean anything at all.
 - [ ] **Rate limit per IP** on `/v1/chat` and `/v1/meetings` — something like
       20 requests/minute and a few hundred per day. The client caps a tab at 25
@@ -74,7 +74,7 @@ is advisory; a request from `curl` skips all of it.
 
 ### About the site token
 
-`js/agent.js` sends a static `X-Site-Token` header. It is readable by anyone
+`src/App.tsx` sends a static `X-Site-Token` header. It is readable by anyone
 who opens devtools, so treat it as a public speed bump for scrapers, never as
 authentication. It was left in place because removing it would break the chat
 until the backend stops requiring it.
@@ -162,9 +162,7 @@ The domain is the identity. Losing it is worse than losing the repo.
 
 - [ ] Point the `README.md` "Live" link at `https://efrain-galvis.info` — it
       still shows the old `github.io` URL.
-- [ ] If the chat ever needs formatted replies, build the nodes with
-      `createElement` against a tag allowlist. Never assemble an HTML string
-      from model output. There is a comment at `addMessage` in `js/agent.js`
-      saying the same thing.
+- [ ] If chat ever needs formatted replies, use a fixed, sanitised component
+      allowlist. Never assemble an HTML string from model output.
 - [ ] Re-check this list whenever the Railway agent gains a tool, a data
       source, or a new endpoint.
