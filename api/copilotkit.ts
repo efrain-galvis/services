@@ -8,7 +8,7 @@ import {
   limitVisitor,
   type VisitorRateLimiter,
   type VisitorRateLimitResult,
-} from "./visitor-rate-limit";
+} from "./visitor-rate-limit.js";
 
 const RUNTIME_BASE_PATH = "/api/copilotkit";
 const DEFAULT_SITE_AGENT_URL =
