@@ -10,6 +10,5 @@
     "moduleResolution": "NodeNext",
     "noEmit": true
   },
-  "include": ["api/**/*.ts"],
-  "exclude": ["api/**/*.test.ts"]
+  "include": ["api/**/*.ts"]
 }
