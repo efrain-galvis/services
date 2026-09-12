@@ -7,7 +7,7 @@ Live: https://efrain-galvis.info
 
 ## Local development
 
-Requires Node.js 20.19+.
+Requires Node.js 22.x, matching the Vercel Runtime and `package.json`.
 
 ```bash
 npm ci

@@ -104,7 +104,7 @@ function runtimeRequest(request: Request): Request {
   return new Request(incomingUrl, request);
 }
 
-export default async function handler(request: Request): Promise<Response> {
+async function handleRequest(request: Request): Promise<Response> {
   try {
     return await getRuntimeHandler()(runtimeRequest(request));
   } catch (error) {
@@ -117,3 +117,7 @@ export default async function handler(request: Request): Promise<Response> {
     );
   }
 }
+
+export default {
+  fetch: handleRequest,
+};
