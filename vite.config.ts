@@ -1,8 +1,6 @@
 import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
-
-const DEFAULT_SITE_AGENT_URL =
-  "https://site-agent-production.up.railway.app";
+import { DEFAULT_SITE_AGENT_URL } from "./src/config";
 
 function cspConnectSources(mode: string): Plugin {
   const env = loadEnv(mode, ".", "VITE_");
@@ -13,7 +11,14 @@ function cspConnectSources(mode: string): Plugin {
   const origins = new Set(["'self'"]);
 
   for (const configuredUrl of configuredUrls) {
-    const url = new URL(configuredUrl);
+    let url: URL;
+    try {
+      url = new URL(configuredUrl);
+    } catch {
+      throw new Error(
+        `CSP connect URL must be absolute, including scheme: ${configuredUrl}`,
+      );
+    }
     if (url.protocol !== "https:" && url.protocol !== "http:") {
       throw new Error(`CSP connect URL must use HTTP(S): ${configuredUrl}`);
     }

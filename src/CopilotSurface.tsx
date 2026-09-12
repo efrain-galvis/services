@@ -7,7 +7,8 @@ import { useAgent } from "@copilotkit/react-core/v2/headless";
 import {
   CHAT_LIMIT_NOTE,
   CHAT_MAX_TURNS,
-  readChatTurns,
+  mintMessageId,
+  readChatSession,
   writeChatTurns,
 } from "./chatLimits";
 
@@ -54,23 +55,26 @@ function Chat({
 }) {
   const { agent, isReady } = useAgent({ agentId });
   const [input, setInput] = useState("");
-  const [turns, setTurns] = useState(readChatTurns);
+  const [initialSession] = useState(readChatSession);
+  const [turns, setTurns] = useState(initialSession.turns);
   const spent = turns >= CHAT_MAX_TURNS;
 
   async function send(prompt: string) {
     const text = prompt.trim().slice(0, 2000);
     if (!text || !isReady || agent.isRunning || spent) return;
-    const nextTurns = turns + 1;
-    setTurns(nextTurns);
-    writeChatTurns(nextTurns);
     setSurfaceError("");
     onPendingPrompt(text);
     setInput("");
+    const messagesBeforeRun = [...agent.messages];
     try {
-      agent.addMessage({ id: crypto.randomUUID(), role: "user", content: text });
+      agent.addMessage({ id: mintMessageId(), role: "user", content: text });
       await agent.runAgent();
+      const nextTurns = turns + 1;
+      setTurns(nextTurns);
+      writeChatTurns(nextTurns);
       onPendingPrompt("");
     } catch {
+      agent.setMessages(messagesBeforeRun);
       setInput(text);
       onPendingPrompt("");
       setSurfaceError(

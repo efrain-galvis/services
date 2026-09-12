@@ -6,21 +6,22 @@ import {
   Suspense,
   useCallback,
   useEffect,
-  useMemo,
   useState,
 } from "react";
 import {
   CHAT_LIMIT_NOTE,
   CHAT_MAX_TURNS,
-  readChatTurns,
+  readChatSession,
+  writeChatSessionId,
   writeChatTurns,
 } from "./chatLimits";
+import { DEFAULT_SITE_AGENT_URL } from "./config";
 
 const CopilotSurface = lazy(() => import("./CopilotSurface"));
 
 const BACKEND_URL =
   import.meta.env.VITE_SITE_AGENT_URL ||
-  "https://site-agent-production.up.railway.app";
+  DEFAULT_SITE_AGENT_URL;
 const RUNTIME_URL = import.meta.env.VITE_COPILOTKIT_RUNTIME_URL || "";
 const AGENT_ID = import.meta.env.VITE_COPILOTKIT_AGENT_ID || "lyra";
 // This is a public anti-scraping speed bump, never a secret or auth boundary.
@@ -150,8 +151,9 @@ function FallbackChat({
   ]);
   const [input, setInput] = useState(initialDraft);
   const [busy, setBusy] = useState(false);
-  const [turns, setTurns] = useState(readChatTurns);
-  const sessionId = useMemo(() => crypto.randomUUID(), []);
+  const [initialSession] = useState(readChatSession);
+  const [sessionId, setSessionId] = useState(initialSession.sessionId);
+  const [turns, setTurns] = useState(initialSession.turns);
   const spent = turns >= CHAT_MAX_TURNS;
 
   async function send(text: string) {
@@ -164,10 +166,15 @@ function FallbackChat({
     setInput("");
     setBusy(true);
     try {
-      const data = await postJson("/v1/chat", {
-        message: prompt,
-        session_id: sessionId,
-      });
+      const payload: { message: string; session_id?: string } = { message: prompt };
+      if (sessionId) payload.session_id = sessionId;
+      const data = await postJson("/v1/chat", payload);
+      const nextSessionId =
+        typeof data.session_id === "string" ? data.session_id.trim() : "";
+      if (nextSessionId) {
+        setSessionId(nextSessionId);
+        writeChatSessionId(nextSessionId);
+      }
       const reply = typeof data.reply === "string" ? data.reply : "";
       setMessages((current) => [
         ...current,
