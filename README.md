@@ -16,18 +16,20 @@ npm run dev
 ```
 
 The Railway REST service is the default backend. Leave
-`VITE_COPILOTKIT_RUNTIME_URL` blank to use `/v1/chat`. Once site-agent exposes
-its CopilotKit Runtime / AG-UI gateway, set:
+`VITE_COPILOTKIT_RUNTIME_URL` blank with plain Vite development to use
+`/v1/chat`. Vercel serves the repository's CopilotKit Runtime adapter at:
 
 ```dotenv
-VITE_COPILOTKIT_RUNTIME_URL=https://site-agent-production.up.railway.app/<runtime-path>
+VITE_COPILOTKIT_RUNTIME_URL=/api/copilotkit
 VITE_COPILOTKIT_AGENT_ID=lyra
 ```
 
-The exact runtime path is a backend dependency and is intentionally not
-guessed here. CopilotKit probes the configured runtime and the UI falls back
-to `/v1/chat` if the connection fails. `VITE_SITE_TOKEN`, when present, is a
-public browser-visible speed bump—not a secret.
+The v2 provider discovers the agent through `/api/copilotkit/info`; runs are
+proxied server-side to Railway's `/v1/agui` endpoint. `SITE_TOKEN` is an
+optional server-only Runtime credential. `VITE_SITE_TOKEN`, when present, is a
+separate public browser-visible speed bump for direct Railway requests—not a
+secret. See [`docs/vercel-cutover.md`](docs/vercel-cutover.md) for all Vercel
+variables and the production cutover sequence.
 
 ## GitHub Pages
 

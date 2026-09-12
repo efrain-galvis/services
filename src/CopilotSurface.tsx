@@ -15,7 +15,6 @@ import {
 type Props = {
   runtimeUrl: string;
   agentId: string;
-  headers: Record<string, string>;
   starters: string[];
   onConnectionFailure: (draft?: string) => void;
 };
@@ -171,7 +170,6 @@ export default function CopilotSurface(props: Props) {
     <CopilotKitProvider
       runtimeUrl={props.runtimeUrl}
       agentId={props.agentId}
-      headers={props.headers}
       onError={handleProviderError}
     >
       <Chat

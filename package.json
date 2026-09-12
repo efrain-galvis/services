@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "description": "One-page site for Efrain Galvis AI consulting.",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -14,7 +17,11 @@
     "type": "git",
     "url": "git+https://github.com/efrain-galvis/services.git"
   },
-  "keywords": ["copilotkit", "ag-ui", "react"],
+  "keywords": [
+    "copilotkit",
+    "ag-ui",
+    "react"
+  ],
   "author": "Efrain Galvis",
   "license": "MIT",
   "bugs": {
@@ -22,7 +29,9 @@
   },
   "homepage": "https://efrain-galvis.info",
   "dependencies": {
+    "@ag-ui/client": "^0.0.59",
     "@copilotkit/react-core": "^1.71.1",
+    "@copilotkit/runtime": "^1.71.1",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
@@ -30,6 +39,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/node": "^22.20.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
