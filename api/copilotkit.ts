@@ -3,6 +3,12 @@ import {
   CopilotRuntime,
   createCopilotRuntimeHandler,
 } from "@copilotkit/runtime/v2";
+import { isIP } from "node:net";
+import {
+  limitVisitor,
+  type VisitorRateLimiter,
+  type VisitorRateLimitResult,
+} from "./visitor-rate-limit";
 
 const RUNTIME_BASE_PATH = "/api/copilotkit";
 const DEFAULT_SITE_AGENT_URL =
@@ -11,10 +17,17 @@ const DEFAULT_AGENT_ID = "lyra";
 
 type RuntimeHandler = ReturnType<typeof createCopilotRuntimeHandler>;
 
-let runtimeHandler: RuntimeHandler | undefined;
+type AgentFetch = (url: string, init: RequestInit) => Promise<Response>;
 
-function readAgentEndpoint(): URL {
-  const configured = process.env.SITE_AGENT_URL?.trim() || DEFAULT_SITE_AGENT_URL;
+type EndpointOptions = {
+  agentFetch?: AgentFetch;
+  environment?: NodeJS.ProcessEnv;
+  visitorRateLimiter?: VisitorRateLimiter;
+};
+
+function readAgentEndpoint(environment: NodeJS.ProcessEnv): URL {
+  const configured =
+    environment.SITE_AGENT_URL?.trim() || DEFAULT_SITE_AGENT_URL;
   let siteAgentUrl: URL;
 
   try {
@@ -40,9 +53,9 @@ function readAgentEndpoint(): URL {
   return siteAgentUrl;
 }
 
-function readAgentId(): string {
+function readAgentId(environment: NodeJS.ProcessEnv): string {
   const agentId =
-    process.env.COPILOTKIT_AGENT_ID?.trim() || DEFAULT_AGENT_ID;
+    environment.COPILOTKIT_AGENT_ID?.trim() || DEFAULT_AGENT_ID;
   if (!/^[A-Za-z0-9_-]{1,64}$/.test(agentId)) {
     throw new Error(
       "COPILOTKIT_AGENT_ID must contain only letters, numbers, underscores, or hyphens.",
@@ -51,11 +64,18 @@ function readAgentId(): string {
   return agentId;
 }
 
-function getRuntimeHandler(): RuntimeHandler {
-  if (runtimeHandler) return runtimeHandler;
+function trustedVisitorIp(request: Request): string | null {
+  const value = request.headers.get("x-vercel-forwarded-for")?.trim();
+  if (!value || value.includes(",") || isIP(value) === 0) return null;
+  return value;
+}
 
-  const agentId = readAgentId();
-  const siteToken = process.env.SITE_TOKEN?.trim();
+function createRuntimeHandler(
+  environment: NodeJS.ProcessEnv,
+  agentFetch?: AgentFetch,
+): RuntimeHandler {
+  const agentId = readAgentId(environment);
+  const siteToken = environment.SITE_TOKEN?.trim();
   const headers: Record<string, string> = {
     Accept: "text/event-stream",
   };
@@ -65,8 +85,9 @@ function getRuntimeHandler(): RuntimeHandler {
     agents: {
       [agentId]: new HttpAgent({
         agentId,
-        url: readAgentEndpoint().toString(),
+        url: readAgentEndpoint(environment).toString(),
         headers,
+        ...(agentFetch ? { fetch: agentFetch } : {}),
       }),
     },
     // Never pass browser-supplied authorization or speed-bump headers upstream.
@@ -77,12 +98,11 @@ function getRuntimeHandler(): RuntimeHandler {
     },
   });
 
-  runtimeHandler = createCopilotRuntimeHandler({
+  return createCopilotRuntimeHandler({
     runtime,
     basePath: RUNTIME_BASE_PATH,
     mode: "multi-route",
   });
-  return runtimeHandler;
 }
 
 function runtimeRequest(request: Request): Request {
@@ -104,20 +124,82 @@ function runtimeRequest(request: Request): Request {
   return new Request(incomingUrl, request);
 }
 
-async function handleRequest(request: Request): Promise<Response> {
-  try {
-    return await getRuntimeHandler()(runtimeRequest(request));
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unknown runtime configuration error.";
-    console.error("CopilotKit runtime request failed:", message);
-    return Response.json(
-      { error: "CopilotKit runtime is unavailable.", detail: message },
-      { status: 500 },
-    );
-  }
+function isAgentRun(request: Request): boolean {
+  return (
+    request.method === "POST" &&
+    /^\/api\/copilotkit\/agent\/[^/]+\/run$/.test(new URL(request.url).pathname)
+  );
 }
 
-export default {
-  fetch: handleRequest,
-};
+function rateLimitResponse(result: VisitorRateLimitResult): Response {
+  const retryAfter = Math.max(1, Math.ceil((result.reset - Date.now()) / 1000));
+  return Response.json(
+    { error: "LYRA's visitor message limit has been reached. Try again later." },
+    {
+      status: 429,
+      headers: {
+        "Retry-After": String(retryAfter),
+        "X-RateLimit-Limit": String(result.limit),
+        "X-RateLimit-Remaining": String(result.remaining),
+        "X-RateLimit-Reset": String(result.reset),
+      },
+    },
+  );
+}
+
+export function createCopilotKitEndpoint(options: EndpointOptions = {}) {
+  const environment = options.environment || process.env;
+  const visitorRateLimiter = options.visitorRateLimiter || limitVisitor;
+  let runtimeHandler: RuntimeHandler | undefined;
+
+  return {
+    async fetch(request: Request): Promise<Response> {
+      try {
+        const normalizedRequest = runtimeRequest(request);
+
+        if (isAgentRun(normalizedRequest)) {
+          const visitorIp = trustedVisitorIp(request);
+          if (!visitorIp) {
+            return Response.json(
+              { error: "A trusted Vercel visitor IP is required." },
+              { status: 403 },
+            );
+          }
+
+          let rateLimit: VisitorRateLimitResult;
+          try {
+            rateLimit = await visitorRateLimiter(visitorIp);
+          } catch (error) {
+            console.error(
+              "CopilotKit visitor rate limiter failed:",
+              error instanceof Error ? error.message : "Unknown rate limiter error.",
+            );
+            return Response.json(
+              { error: "LYRA's visitor rate limiter is unavailable." },
+              { status: 503 },
+            );
+          }
+          if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
+        }
+
+        runtimeHandler ||= createRuntimeHandler(
+          environment,
+          options.agentFetch,
+        );
+        return await runtimeHandler(normalizedRequest);
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Unknown runtime configuration error.";
+        console.error("CopilotKit runtime request failed:", message);
+        return Response.json(
+          { error: "CopilotKit runtime is unavailable.", detail: message },
+          { status: 500 },
+        );
+      }
+    },
+  };
+}
+
+export default createCopilotKitEndpoint();

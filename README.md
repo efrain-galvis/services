@@ -28,8 +28,10 @@ The v2 provider discovers the agent through `/api/copilotkit/info`; runs are
 proxied server-side to Railway's `/v1/agui` endpoint. `SITE_TOKEN` is an
 optional server-only Runtime credential. `VITE_SITE_TOKEN`, when present, is a
 separate public browser-visible speed bump for direct Railway requests—not a
-secret. See [`docs/vercel-cutover.md`](docs/vercel-cutover.md) for all Vercel
-variables and the production cutover sequence.
+secret. Agent runs also require the server-only Upstash Redis REST variables
+for durable per-visitor limiting. See
+[`docs/vercel-cutover.md`](docs/vercel-cutover.md) for all Vercel variables and
+the production cutover sequence.
 
 ## GitHub Pages
 
