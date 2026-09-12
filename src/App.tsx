@@ -1,4 +1,20 @@
-import { FormEvent, lazy, Suspense, useEffect, useMemo, useState } from "react";
+import {
+  Component,
+  FormEvent,
+  lazy,
+  ReactNode,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import {
+  CHAT_LIMIT_NOTE,
+  CHAT_MAX_TURNS,
+  readChatTurns,
+  writeChatTurns,
+} from "./chatLimits";
 
 const CopilotSurface = lazy(() => import("./CopilotSurface"));
 
@@ -10,6 +26,9 @@ const AGENT_ID = import.meta.env.VITE_COPILOTKIT_AGENT_ID || "lyra";
 // This is a public anti-scraping speed bump, never a secret or auth boundary.
 const SITE_TOKEN =
   import.meta.env.VITE_SITE_TOKEN || "4f4ec8bc502fe37e4de9805169f4cb89";
+const REQUEST_HEADERS: Record<string, string> = SITE_TOKEN
+  ? { "X-Site-Token": SITE_TOKEN }
+  : {};
 const DEFAULT_STARTERS = [
   "What production AI systems has Efrain built?",
   "How would you evaluate an agent before launch?",
@@ -18,8 +37,26 @@ const DEFAULT_STARTERS = [
 
 type ChatMessage = { role: "user" | "assistant" | "error"; text: string };
 
-function requestHeaders(): Record<string, string> {
-  return SITE_TOKEN ? { "X-Site-Token": SITE_TOKEN } : {};
+class CopilotChunkBoundary extends Component<
+  { children: ReactNode; onFailure: () => void },
+  { failed: boolean }
+> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch() {
+    this.props.onFailure();
+  }
+
+  render() {
+    if (this.state.failed) {
+      return <p className="loading-state">Switching to the chat fallback…</p>;
+    }
+    return this.props.children;
+  }
 }
 
 async function postJson(path: string, payload: unknown, timeoutMs = 25_000) {
@@ -28,7 +65,7 @@ async function postJson(path: string, payload: unknown, timeoutMs = 25_000) {
   try {
     const response = await fetch(`${BACKEND_URL}${path}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...requestHeaders() },
+      headers: { "Content-Type": "application/json", ...REQUEST_HEADERS },
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
@@ -45,7 +82,7 @@ function useStarters() {
   useEffect(() => {
     const controller = new AbortController();
     fetch(`${BACKEND_URL}/v1/starters`, {
-      headers: requestHeaders(),
+      headers: REQUEST_HEADERS,
       signal: controller.signal,
     })
       .then((response) => {
@@ -62,12 +99,14 @@ function useStarters() {
         const next = source
           .map((item) =>
             typeof item === "string"
-              ? item
+              ? item.trim()
               : typeof item === "object" && item && "prompt" in item
-                ? String((item as { prompt: unknown }).prompt)
+                ? String((item as { prompt: unknown }).prompt).trim()
                 : "",
           )
-          .filter(Boolean)
+          .filter((prompt, index, prompts) =>
+            Boolean(prompt) && prompts.indexOf(prompt) === index,
+          )
           .slice(0, 4);
         if (next.length) setStarters(next);
       })
@@ -96,20 +135,31 @@ function StarterList({
   );
 }
 
-function FallbackChat({ starters }: { starters: string[] }) {
+function FallbackChat({
+  starters,
+  initialDraft = "",
+}: {
+  starters: string[];
+  initialDraft?: string;
+}) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
       text: "I’m LYRA, an AI system built by Efrain. Ask me about his work, approach, or whether your problem is a fit.",
     },
   ]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(initialDraft);
   const [busy, setBusy] = useState(false);
+  const [turns, setTurns] = useState(readChatTurns);
   const sessionId = useMemo(() => crypto.randomUUID(), []);
+  const spent = turns >= CHAT_MAX_TURNS;
 
   async function send(text: string) {
     const prompt = text.trim().slice(0, 2000);
-    if (!prompt || busy) return;
+    if (!prompt || busy || spent) return;
+    const nextTurns = turns + 1;
+    setTurns(nextTurns);
+    writeChatTurns(nextTurns);
     setMessages((current) => [...current, { role: "user", text: prompt }]);
     setInput("");
     setBusy(true);
@@ -152,8 +202,11 @@ function FallbackChat({ starters }: { starters: string[] }) {
             {message.text}
           </p>
         ))}
+        {spent && <p className="message error">{CHAT_LIMIT_NOTE}</p>}
       </div>
-      {messages.length === 1 && <StarterList starters={starters} onSelect={send} />}
+      {messages.length === 1 && !spent && (
+        <StarterList starters={starters} onSelect={send} />
+      )}
       <form className="composer" onSubmit={submit}>
         <label className="sr-only" htmlFor="lyra-message">Message LYRA</label>
         <textarea
@@ -161,7 +214,7 @@ function FallbackChat({ starters }: { starters: string[] }) {
           value={input}
           maxLength={2000}
           rows={2}
-          disabled={busy}
+          disabled={busy || spent}
           placeholder="Ask LYRA about Efrain’s work…"
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={(event) => {
@@ -171,7 +224,7 @@ function FallbackChat({ starters }: { starters: string[] }) {
             }
           }}
         />
-        <button type="submit" disabled={busy || !input.trim()}>
+        <button type="submit" disabled={busy || spent || !input.trim()}>
           {busy ? "Thinking…" : "Send"}
         </button>
       </form>
@@ -182,6 +235,11 @@ function FallbackChat({ starters }: { starters: string[] }) {
 function LyraHero() {
   const starters = useStarters();
   const [runtimeFailed, setRuntimeFailed] = useState(false);
+  const [fallbackDraft, setFallbackDraft] = useState("");
+  const handleRuntimeFailure = useCallback((draft = "") => {
+    setFallbackDraft(draft);
+    setRuntimeFailed(true);
+  }, []);
   const useCopilot = Boolean(RUNTIME_URL) && !runtimeFailed;
 
   return (
@@ -203,17 +261,19 @@ function LyraHero() {
       </div>
       <div className="chat-frame">
         {useCopilot ? (
-          <Suspense fallback={<p className="loading-state">Connecting LYRA…</p>}>
-            <CopilotSurface
-              runtimeUrl={RUNTIME_URL}
-              agentId={AGENT_ID}
-              headers={requestHeaders()}
-              starters={starters}
-              onFailure={() => setRuntimeFailed(true)}
-            />
-          </Suspense>
+          <CopilotChunkBoundary onFailure={handleRuntimeFailure}>
+            <Suspense fallback={<p className="loading-state">Connecting LYRA…</p>}>
+              <CopilotSurface
+                runtimeUrl={RUNTIME_URL}
+                agentId={AGENT_ID}
+                headers={REQUEST_HEADERS}
+                starters={starters}
+                onConnectionFailure={handleRuntimeFailure}
+              />
+            </Suspense>
+          </CopilotChunkBoundary>
         ) : (
-          <FallbackChat starters={starters} />
+          <FallbackChat starters={starters} initialDraft={fallbackDraft} />
         )}
       </div>
       <p className="privacy-note">Keep names, email addresses, and confidential details out of chat. Use Book for anything personal.</p>

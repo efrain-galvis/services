@@ -1,13 +1,43 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 
-export default defineConfig({
-  root: "src",
-  publicDir: "../public",
-  plugins: [react()],
-  build: {
-    outDir: "../dist",
-    emptyOutDir: true,
-    assetsDir: "assets/build",
-  },
+const DEFAULT_SITE_AGENT_URL =
+  "https://site-agent-production.up.railway.app";
+
+function cspConnectSources(mode: string): Plugin {
+  const env = loadEnv(mode, ".", "VITE_");
+  const configuredUrls = [
+    env.VITE_SITE_AGENT_URL || DEFAULT_SITE_AGENT_URL,
+    env.VITE_COPILOTKIT_RUNTIME_URL,
+  ].filter(Boolean);
+  const origins = new Set(["'self'"]);
+
+  for (const configuredUrl of configuredUrls) {
+    const url = new URL(configuredUrl);
+    if (url.protocol !== "https:" && url.protocol !== "http:") {
+      throw new Error(`CSP connect URL must use HTTP(S): ${configuredUrl}`);
+    }
+    origins.add(url.origin);
+  }
+
+  return {
+    name: "lyra-csp-connect-sources",
+    transformIndexHtml(html) {
+      return html.replace("__LYRA_CONNECT_SRC__", [...origins].join(" "));
+    },
+  };
+}
+
+export default defineConfig(({ mode }) => {
+  return {
+    root: "src",
+    envDir: "..",
+    publicDir: "../public",
+    plugins: [react(), cspConnectSources(mode)],
+    build: {
+      outDir: "../dist",
+      emptyOutDir: true,
+      assetsDir: "assets/build",
+    },
+  };
 });

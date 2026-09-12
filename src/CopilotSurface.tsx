@@ -1,13 +1,32 @@
-import { FormEvent, useState } from "react";
-import { CopilotKitProvider, useAgent } from "@copilotkit/react-core/v2";
+import { FormEvent, useCallback, useRef, useState } from "react";
+import {
+  CopilotKitProvider,
+  type CopilotKitProviderProps,
+} from "@copilotkit/react-core/v2";
+import { useAgent } from "@copilotkit/react-core/v2/headless";
+import {
+  CHAT_LIMIT_NOTE,
+  CHAT_MAX_TURNS,
+  readChatTurns,
+  writeChatTurns,
+} from "./chatLimits";
 
 type Props = {
   runtimeUrl: string;
   agentId: string;
   headers: Record<string, string>;
   starters: string[];
-  onFailure: () => void;
+  onConnectionFailure: (draft?: string) => void;
 };
+
+type ProviderErrorEvent = Parameters<
+  NonNullable<CopilotKitProviderProps["onError"]>
+>[0];
+
+const CONNECTION_FAILURE_CODES = new Set([
+  "runtime_info_fetch_failed",
+  "agent_connect_failed",
+]);
 
 function messageText(content: unknown): string {
   if (typeof content === "string") return content;
@@ -25,20 +44,38 @@ function messageText(content: unknown): string {
 function Chat({
   agentId,
   starters,
-  onFailure,
-}: Pick<Props, "agentId" | "starters" | "onFailure">) {
-  const { agent } = useAgent({ agentId });
+  surfaceError,
+  setSurfaceError,
+  onPendingPrompt,
+}: Pick<Props, "agentId" | "starters"> & {
+  surfaceError: string;
+  setSurfaceError: (message: string) => void;
+  onPendingPrompt: (prompt: string) => void;
+}) {
+  const { agent, isReady } = useAgent({ agentId });
   const [input, setInput] = useState("");
+  const [turns, setTurns] = useState(readChatTurns);
+  const spent = turns >= CHAT_MAX_TURNS;
 
   async function send(prompt: string) {
     const text = prompt.trim().slice(0, 2000);
-    if (!text || agent.isRunning) return;
-    agent.addMessage({ id: crypto.randomUUID(), role: "user", content: text });
+    if (!text || !isReady || agent.isRunning || spent) return;
+    const nextTurns = turns + 1;
+    setTurns(nextTurns);
+    writeChatTurns(nextTurns);
+    setSurfaceError("");
+    onPendingPrompt(text);
     setInput("");
     try {
+      agent.addMessage({ id: crypto.randomUUID(), role: "user", content: text });
       await agent.runAgent();
+      onPendingPrompt("");
     } catch {
-      onFailure();
+      setInput(text);
+      onPendingPrompt("");
+      setSurfaceError(
+        "LYRA could not complete that reply. Your message is restored so you can retry.",
+      );
     }
   }
 
@@ -47,9 +84,10 @@ function Chat({
     void send(input);
   }
 
-  const messages = agent.messages.filter(
-    (message) => message.role === "user" || message.role === "assistant",
-  );
+  const messages = agent.messages
+    .filter((message) => message.role === "user" || message.role === "assistant")
+    .map((message) => ({ ...message, text: messageText(message.content) }))
+    .filter((message) => Boolean(message.text));
 
   return (
     <>
@@ -62,11 +100,13 @@ function Chat({
         )}
         {messages.map((message) => (
           <p className={`message ${message.role}`} key={message.id}>
-            {messageText(message.content)}
+            {message.text}
           </p>
         ))}
+        {surfaceError && <p className="message error">{surfaceError}</p>}
+        {spent && <p className="message error">{CHAT_LIMIT_NOTE}</p>}
       </div>
-      {messages.length === 0 && (
+      {messages.length === 0 && isReady && !spent && (
         <div className="starters" aria-label="Suggested questions">
           {starters.map((starter) => (
             <button key={starter} type="button" onClick={() => void send(starter)}>
@@ -82,8 +122,8 @@ function Chat({
           value={input}
           maxLength={2000}
           rows={2}
-          disabled={agent.isRunning}
-          placeholder="Ask LYRA about Efrain’s work…"
+          disabled={!isReady || agent.isRunning || spent}
+          placeholder={isReady ? "Ask LYRA about Efrain’s work…" : "Connecting LYRA…"}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {
@@ -92,8 +132,11 @@ function Chat({
             }
           }}
         />
-        <button type="submit" disabled={agent.isRunning || !input.trim()}>
-          {agent.isRunning ? "Thinking…" : "Send"}
+        <button
+          type="submit"
+          disabled={!isReady || agent.isRunning || spent || !input.trim()}
+        >
+          {!isReady ? "Connecting…" : agent.isRunning ? "Thinking…" : "Send"}
         </button>
       </form>
     </>
@@ -101,17 +144,37 @@ function Chat({
 }
 
 export default function CopilotSurface(props: Props) {
+  const [surfaceError, setSurfaceError] = useState("");
+  const pendingPrompt = useRef("");
+  const handlePendingPrompt = useCallback((prompt: string) => {
+    pendingPrompt.current = prompt;
+  }, []);
+  const handleProviderError = useCallback(
+    (event: ProviderErrorEvent) => {
+      if (CONNECTION_FAILURE_CODES.has(event.code)) {
+        props.onConnectionFailure(pendingPrompt.current);
+        return;
+      }
+      setSurfaceError(
+        "LYRA hit a temporary agent error. Your conversation is still here.",
+      );
+    },
+    [props.onConnectionFailure],
+  );
+
   return (
     <CopilotKitProvider
       runtimeUrl={props.runtimeUrl}
       agentId={props.agentId}
       headers={props.headers}
-      onError={props.onFailure}
+      onError={handleProviderError}
     >
       <Chat
         agentId={props.agentId}
         starters={props.starters}
-        onFailure={props.onFailure}
+        surfaceError={surfaceError}
+        setSurfaceError={setSurfaceError}
+        onPendingPrompt={handlePendingPrompt}
       />
     </CopilotKitProvider>
   );
