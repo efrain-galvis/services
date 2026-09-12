@@ -273,7 +273,6 @@ function LyraHero() {
               <CopilotSurface
                 runtimeUrl={RUNTIME_URL}
                 agentId={AGENT_ID}
-                headers={REQUEST_HEADERS}
                 starters={starters}
                 onConnectionFailure={handleRuntimeFailure}
               />

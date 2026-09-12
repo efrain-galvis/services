@@ -11,6 +11,10 @@ function cspConnectSources(mode: string): Plugin {
   const origins = new Set(["'self'"]);
 
   for (const configuredUrl of configuredUrls) {
+    if (configuredUrl.startsWith("/") && !configuredUrl.startsWith("//")) {
+      continue;
+    }
+
     let url: URL;
     try {
       url = new URL(configuredUrl);

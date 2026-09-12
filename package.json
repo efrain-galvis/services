@@ -4,17 +4,25 @@
   "private": true,
   "type": "module",
   "description": "One-page site for Efrain Galvis AI consulting.",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "check": "npm run lint && npm run build"
+    "test": "vitest run",
+    "check": "npm run lint && npm run test && npm run build"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/efrain-galvis/services.git"
   },
-  "keywords": ["copilotkit", "ag-ui", "react"],
+  "keywords": [
+    "copilotkit",
+    "ag-ui",
+    "react"
+  ],
   "author": "Efrain Galvis",
   "license": "MIT",
   "bugs": {
@@ -22,14 +30,19 @@
   },
   "homepage": "https://efrain-galvis.info",
   "dependencies": {
+    "@ag-ui/client": "^0.0.59",
     "@copilotkit/react-core": "^1.71.1",
+    "@copilotkit/runtime": "^1.71.1",
     "@modelcontextprotocol/sdk": "^1.30.0",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "zod": "^4.6.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/node": "^22.20.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
@@ -38,6 +51,7 @@
     "globals": "^17.12.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.70.0",
-    "vite": "^8.3.0"
+    "vite": "^8.3.0",
+    "vitest": "^4.1.11"
   }
 }
