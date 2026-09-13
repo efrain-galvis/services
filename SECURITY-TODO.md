@@ -151,8 +151,8 @@ The domain is the identity. Losing it is worse than losing the repo.
 - [ ] **DKIM:** nothing to publish while the domain sends no mail. Revisit if
       you ever move off the `mailto:` contact form.
 - [ ] **CAA (optional):** if you add CAA records, they **must** include
-      `letsencrypt.org` — that is the CA GitHub Pages uses. Omitting it breaks
-      certificate renewal and takes the site offline.
+      `letsencrypt.org` — the live apex uses Let's Encrypt through Vercel.
+      Omitting it breaks certificate renewal and takes the site offline.
 - [ ] **Remove stale DNS records.** Any `CNAME` or `A` record pointing at a
       service you no longer run is a subdomain takeover waiting to happen.
 
