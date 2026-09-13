@@ -17,26 +17,14 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      VITE_SITE_AGENT_URL: ${{ vars.SITE_AGENT_URL }}
-      VITE_COPILOTKIT_RUNTIME_URL: ${{ vars.COPILOTKIT_RUNTIME_URL }}
-      VITE_COPILOTKIT_AGENT_ID: ${{ vars.COPILOTKIT_AGENT_ID }}
-      VITE_SITE_TOKEN: ${{ vars.SITE_TOKEN }}
     steps:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Check source
-        run: npm run check
+      - name: Prepare Pages card
+        run: |
+          mkdir -p pages-artifact
+          cp docs/pages-card.html pages-artifact/index.html
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -44,7 +32,7 @@ jobs:
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: pages-artifact
 
   deploy:
     environment:
