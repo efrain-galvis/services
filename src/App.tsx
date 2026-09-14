@@ -16,6 +16,7 @@ import {
   writeChatTurns,
 } from "./chatLimits";
 import { DEFAULT_SITE_AGENT_URL } from "./config";
+import CareerTimeline from "./CareerTimeline";
 import FitDashboard from "./FitDashboard";
 import PlayerCard from "./PlayerCard";
 import {
@@ -348,7 +349,8 @@ function LyraHero() {
   const starters = useStarters();
   const [runtimeFailed, setRuntimeFailed] = useState(false);
   const [fallbackDraft, setFallbackDraft] = useState("");
-  const [activePanel, setActivePanel] = useState<"fit" | "player" | null>(null);
+  const [activePanel, setActivePanel] = useState<"fit" | "player" | "timeline" | null>(null);
+  const [timelineFilters, setTimelineFilters] = useState<string[]>([]);
   const handleRuntimeFailure = useCallback((draft = "") => {
     setFallbackDraft(draft);
     setRuntimeFailed(true);
@@ -379,6 +381,13 @@ function LyraHero() {
         {activePanel === "player" && (
           <PlayerCard onClose={() => setActivePanel(null)} />
         )}
+        {activePanel === "timeline" && (
+          <CareerTimeline
+            filters={timelineFilters}
+            onFiltersChange={setTimelineFilters}
+            onClose={() => setActivePanel(null)}
+          />
+        )}
         <div className="chat-surface" hidden={activePanel !== null}>
           {useCopilot ? (
             <CopilotChunkBoundary onFailure={handleRuntimeFailure}>
@@ -397,6 +406,9 @@ function LyraHero() {
           <div className="fit-entry">
             <span>Explore the professional profile</span>
             <div>
+              <button type="button" onClick={() => setActivePanel("timeline")}>
+                View career timeline <span aria-hidden="true">↗</span>
+              </button>
               <button type="button" onClick={() => setActivePanel("player")}>
                 View skill profile <span aria-hidden="true">↗</span>
               </button>
