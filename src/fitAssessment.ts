@@ -1,223 +1,135 @@
+export type FitLabel = "Strong" | "Partial" | "Limited" | "No evidence";
+export type FitMatchLevel = "Strong" | "Partial" | "No evidence";
+
 export type FitDimension = {
   name: string;
   score: number;
-  evidence: string[];
 };
 
-export type FitEvidenceItem = {
-  title: string;
-  evidence: string[];
+export type FitMatch = {
+  requirement: string;
+  level: FitMatchLevel;
+  evidence_id?: string;
+  evidence_text?: string;
+  confidence: number;
 };
 
 export type FitAssessment = {
-  roleTitle: string;
-  overallScore: number;
-  label: string;
+  role_title: string;
+  overall_score: number;
+  label: FitLabel;
+  assessment_type: "AI estimate";
   dimensions: FitDimension[];
-  matches: FitEvidenceItem[];
-  gaps: FitEvidenceItem[];
+  matches: FitMatch[];
+  gaps: string[];
   summary: string;
 };
 
 type UnknownRecord = Record<string, unknown>;
 
+const LABELS = new Set<FitLabel>(["Strong", "Partial", "Limited", "No evidence"]);
+const MATCH_LEVELS = new Set<FitMatchLevel>(["Strong", "Partial", "No evidence"]);
 const isRecord = (value: unknown): value is UnknownRecord =>
   typeof value === "object" && value !== null && !Array.isArray(value);
-
-function score(value: unknown): number | null {
-  const parsed =
-    typeof value === "number"
-      ? value
-      : typeof value === "string" && value.trim()
-        ? Number(value)
-        : Number.NaN;
-  if (!Number.isFinite(parsed)) return null;
-  const percentage = parsed >= 0 && parsed <= 1 ? parsed * 100 : parsed;
-  return Math.round(Math.max(0, Math.min(100, percentage)));
-}
-
-function text(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function evidenceList(value: unknown): string[] {
-  if (typeof value === "string") return value.trim() ? [value.trim()] : [];
-  if (!Array.isArray(value)) return [];
-  return value
-    .map((item) =>
-      typeof item === "string"
-        ? item.trim()
-        : isRecord(item)
-          ? text(item.text) || text(item.evidence) || text(item.detail)
-          : "",
-    )
-    .filter(Boolean);
-}
-
-function dimension(value: unknown, index: number): FitDimension | null {
-  if (!isRecord(value)) return null;
-  const dimensionScore = score(value.score);
-  if (dimensionScore === null) return null;
-  return {
-    name:
-      text(value.name) ||
-      text(value.category) ||
-      text(value.dimension) ||
-      `Dimension ${index + 1}`,
-    score: dimensionScore,
-    evidence: evidenceList(
-      value.evidence ?? value.details ?? value.supporting_evidence,
-    ),
-  };
-}
-
-function evidenceItem(value: unknown, index: number, fallback: string): FitEvidenceItem | null {
-  if (typeof value === "string") {
-    const title = value.trim();
-    return title ? { title, evidence: [] } : null;
-  }
-  if (!isRecord(value)) return null;
-  const title =
-    text(value.title) ||
-    text(value.name) ||
-    text(value.dimension) ||
-    text(value.category) ||
-    `${fallback} ${index + 1}`;
-  return {
-    title,
-    evidence: evidenceList(
-      value.evidence ?? value.details ?? value.supporting_evidence ?? value.reason,
-    ),
-  };
-}
-
-export function scoreBand(value: number): "strong" | "partial" | "gap" {
-  if (value >= 75) return "strong";
-  if (value >= 50) return "partial";
-  return "gap";
-}
-
-export function fitLabel(value: number): string {
-  if (value >= 80) return "Strong fit";
-  if (value >= 60) return "Good fit";
-  if (value >= 40) return "Partial fit";
-  return "Limited fit";
-}
+const isScore = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 100;
+const isConfidence = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1;
+const isText = (value: unknown): value is string => typeof value === "string";
 
 export function adaptFitAssessment(value: unknown): FitAssessment | null {
   if (!isRecord(value)) return null;
-  const source =
-    isRecord(value.fit_assessment) ? value.fit_assessment
-      : isRecord(value.assessment) ? value.assessment
-        : value;
-  const overallScore = score(source.overall_score ?? source.overallScore);
-  if (overallScore === null || !Array.isArray(source.dimensions)) return null;
-
-  const dimensions = source.dimensions
-    .map(dimension)
-    .filter((item): item is FitDimension => item !== null);
-  if (!dimensions.length) return null;
-
-  const mapItems = (items: unknown, fallback: string) =>
-    Array.isArray(items)
-      ? items
-          .map((item, index) => evidenceItem(item, index, fallback))
-          .filter((item): item is FitEvidenceItem => item !== null)
-      : [];
-
-  return {
-    roleTitle:
-      text(source.role_title) || text(source.roleTitle) || "Opportunity fit",
-    overallScore,
-    label: text(source.label) || fitLabel(overallScore),
-    dimensions,
-    matches: mapItems(source.matches, "Match"),
-    gaps: mapItems(source.gaps, "Gap"),
-    summary: text(source.summary),
-  };
-}
-
-function parsedJson(value: string): unknown {
-  const candidate = value.trim();
-  if (!candidate.startsWith("{") && !candidate.startsWith("[")) return null;
-  try {
-    return JSON.parse(candidate);
-  } catch {
+  if (
+    !isText(value.role_title) ||
+    !isScore(value.overall_score) ||
+    !isText(value.label) ||
+    !LABELS.has(value.label as FitLabel) ||
+    value.assessment_type !== "AI estimate" ||
+    !Array.isArray(value.dimensions) ||
+    !Array.isArray(value.matches) ||
+    !Array.isArray(value.gaps) ||
+    !isText(value.summary)
+  ) {
     return null;
   }
-}
 
-export function findFitAssessment(value: unknown): FitAssessment | null {
-  const seen = new Set<object>();
-  const visit = (candidate: unknown, depth: number): FitAssessment | null => {
-    if (depth > 8) return null;
-    if (typeof candidate === "string") {
-      const parsed = parsedJson(candidate);
-      return parsed === null ? null : visit(parsed, depth + 1);
-    }
-    if (typeof candidate !== "object" || candidate === null) return null;
-    if (seen.has(candidate)) return null;
-    seen.add(candidate);
+  const dimensions: FitDimension[] = [];
+  for (const item of value.dimensions) {
+    if (!isRecord(item) || !isText(item.name) || !isScore(item.score)) return null;
+    dimensions.push({ name: item.name, score: item.score });
+  }
 
-    const direct = adaptFitAssessment(candidate);
-    if (direct) return direct;
-    const values = Array.isArray(candidate)
-      ? candidate
-      : Object.values(candidate as UnknownRecord);
-    for (const nested of values) {
-      const result = visit(nested, depth + 1);
-      if (result) return result;
+  const matches: FitMatch[] = [];
+  for (const item of value.matches) {
+    if (
+      !isRecord(item) ||
+      !isText(item.requirement) ||
+      !isText(item.level) ||
+      !MATCH_LEVELS.has(item.level as FitMatchLevel) ||
+      !isConfidence(item.confidence) ||
+      (item.evidence_id !== undefined && !isText(item.evidence_id)) ||
+      (item.evidence_text !== undefined && !isText(item.evidence_text))
+    ) {
+      return null;
     }
-    return null;
+    matches.push({
+      requirement: item.requirement,
+      level: item.level as FitMatchLevel,
+      confidence: item.confidence,
+      ...(item.evidence_id === undefined ? {} : { evidence_id: item.evidence_id }),
+      ...(item.evidence_text === undefined ? {} : { evidence_text: item.evidence_text }),
+    });
+  }
+
+  if (!value.gaps.every(isText)) return null;
+
+  return {
+    role_title: value.role_title,
+    overall_score: value.overall_score,
+    label: value.label as FitLabel,
+    assessment_type: "AI estimate",
+    dimensions,
+    matches,
+    gaps: [...value.gaps],
+    summary: value.summary,
   };
-  return visit(value, 0);
 }
 
 export const FIT_ASSESSMENT_FIXTURE: FitAssessment = {
-  roleTitle: "Founding AI Product Engineer",
-  overallScore: 82,
-  label: "Strong fit",
+  role_title: "Founding AI Product Engineer",
+  overall_score: 78,
+  label: "Partial",
+  assessment_type: "AI estimate",
   dimensions: [
-    {
-      name: "Production AI",
-      score: 94,
-      evidence: [
-        "Built and operated tool-using agents with retrieval, memory, and evaluation loops.",
-        "Experience moving prototypes through observability and production hardening.",
-      ],
-    },
-    {
-      name: "Product judgment",
-      score: 86,
-      evidence: ["Led product framing, architecture tradeoffs, and launch readiness reviews."],
-    },
-    {
-      name: "Team leadership",
-      score: 72,
-      evidence: ["Cross-functional technical leadership is documented; team-size evidence is limited."],
-    },
-    {
-      name: "Domain context",
-      score: 48,
-      evidence: [],
-    },
+    { name: "Production AI", score: 94 },
+    { name: "Product judgment", score: 86 },
+    { name: "Team leadership", score: 68 },
+    { name: "Domain context", score: 36 },
   ],
   matches: [
     {
-      title: "Agent systems from prototype to production",
-      evidence: ["Tool design, retrieval, memory, evaluations, guardrails, and operations."],
+      requirement: "Own agent systems from prototype through production",
+      level: "Strong",
+      evidence_id: "portfolio-production-agents",
+      evidence_text: "Built tool-using agents with retrieval, evaluations, and production guardrails.",
+      confidence: 0.93,
     },
     {
-      title: "Technical product leadership",
-      evidence: ["Connects product decisions to architecture, risk, and measurable quality."],
+      requirement: "Lead a growing engineering team",
+      level: "Partial",
+      evidence_text: "Cross-functional technical leadership is documented; team size is not.",
+      confidence: 0.67,
+    },
+    {
+      requirement: "Deep experience in the company’s vertical",
+      level: "No evidence",
+      confidence: 0.18,
     },
   ],
   gaps: [
-    {
-      title: "Direct domain experience",
-      evidence: ["Available evidence does not establish experience in this company’s vertical."],
-    },
+    "Direct experience in this company’s vertical is not established.",
+    "The expected people-management scope needs validation.",
   ],
   summary:
-    "The role aligns strongly with Efrain’s production AI and product-systems work. Validate domain depth and the expected people-management scope in a conversation.",
+    "The role aligns with Efrain’s production AI work, while domain depth and management scope need validation.",
 };

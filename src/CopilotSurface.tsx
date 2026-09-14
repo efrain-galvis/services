@@ -11,11 +11,6 @@ import {
   readChatSession,
   writeChatTurns,
 } from "./chatLimits";
-import FitDashboard from "./FitDashboard";
-import {
-  FIT_ASSESSMENT_FIXTURE,
-  findFitAssessment,
-} from "./fitAssessment";
 
 type Props = {
   runtimeUrl: string;
@@ -61,10 +56,7 @@ function Chat({
   const [input, setInput] = useState("");
   const [initialSession] = useState(readChatSession);
   const [turns, setTurns] = useState(initialSession.turns);
-  const [showFixture, setShowFixture] = useState(false);
   const spent = turns >= CHAT_MAX_TURNS;
-  const liveAssessment = findFitAssessment(agent.messages);
-  const assessment = liveAssessment || (showFixture ? FIT_ASSESSMENT_FIXTURE : null);
 
   async function send(prompt: string) {
     const text = prompt.trim().slice(0, 2000);
@@ -116,21 +108,6 @@ function Chat({
         ))}
         {surfaceError && <p className="message error">{surfaceError}</p>}
         {spent && <p className="message error">{CHAT_LIMIT_NOTE}</p>}
-        {assessment && (
-          <FitDashboard
-            assessment={assessment}
-            onClose={liveAssessment ? undefined : () => setShowFixture(false)}
-          />
-        )}
-        {!assessment && (
-          <button
-            className="fit-preview-trigger"
-            type="button"
-            onClick={() => setShowFixture(true)}
-          >
-            Preview a fit assessment <span aria-hidden="true">↗</span>
-          </button>
-        )}
       </div>
       {messages.length === 0 && isReady && !spent && (
         <div className="starters" aria-label="Suggested questions">
