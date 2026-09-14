@@ -3,6 +3,7 @@ import {
   CAREER_TIMELINE_ENTRIES,
   createCareerTimelineView,
   filterCareerTimeline,
+  getCareerTimelineStatus,
   isCareerEntryHighlighted,
   type CareerTimelineEntry,
 } from "../src/careerTimeline";
@@ -50,6 +51,24 @@ describe("career timeline adapters", () => {
     expect(isCareerEntryHighlighted(item, ["unrelated-evidence"])).toBe(false);
   });
 
+  it("preserves directional status when an entry is highlighted", () => {
+    const [result] = createCareerTimelineView(
+      [entry({
+        evidenceStatus: "directional",
+        evidenceIds: ["directional-evidence"],
+      })],
+      [],
+      ["directional-evidence"],
+    );
+
+    expect(result).toMatchObject({
+      evidenceStatus: "directional",
+      highlighted: true,
+    });
+    expect(getCareerTimelineStatus(result))
+      .toBe("Directional era · Relevant evidence");
+  });
+
   it("combines filtering and highlighting without mutating source entries", () => {
     const entries = [
       entry({ id: "data", tags: ["data"], evidenceIds: ["data-evidence"] }),
@@ -80,6 +99,11 @@ describe("career timeline adapters", () => {
       CAREER_TIMELINE_ENTRIES
         .filter(({ dateRange }) => dateRange.startsWith("~"))
         .every(({ evidenceStatus }) => evidenceStatus === "directional"),
+    ).toBe(true);
+    expect(
+      CAREER_TIMELINE_ENTRIES.every(
+        ({ careerLevel }) => careerLevel === "Not published",
+      ),
     ).toBe(true);
     expect(
       CAREER_TIMELINE_ENTRIES.every(({ organizationLabel }) =>

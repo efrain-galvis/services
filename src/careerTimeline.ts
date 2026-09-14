@@ -22,15 +22,15 @@ export type CareerTimelineViewEntry = CareerTimelineEntry & {
 };
 
 // These are milestones, not a complete employment history. Keep this module
-// aligned with app/knowledge/career/timeline.json in site-agent and do not fill
-// unpublished gaps by inference.
+// aligned with published site-agent knowledge and do not fill unpublished gaps
+// by inference.
 export const CAREER_TIMELINE_ENTRIES: CareerTimelineEntry[] = [
   {
     id: "career-start-2014",
     dateRange: "2014–Present",
     role: "Analyst / data foundation",
     organizationLabel: "Early career analytics",
-    careerLevel: "Foundation",
+    careerLevel: "Not published",
     keyFocus: "Data analysis and AI foundations",
     technologies: [],
     achievements: [
@@ -59,7 +59,7 @@ export const CAREER_TIMELINE_ENTRIES: CareerTimelineEntry[] = [
     dateRange: "2021–Present",
     role: "US enterprise client work",
     organizationLabel: "US enterprise clients",
-    careerLevel: "Enterprise delivery",
+    careerLevel: "Not published",
     keyFocus: "Production delivery for enterprise contexts",
     technologies: [],
     achievements: ["Work with US enterprise clients began in 2021."],
@@ -85,17 +85,14 @@ export const CAREER_TIMELINE_ENTRIES: CareerTimelineEntry[] = [
     dateRange: "Present",
     role: "Independent AI Architect",
     organizationLabel: "Independent practice",
-    careerLevel: "Architecture",
+    careerLevel: "Not published",
     keyFocus: "Production AI systems and technical direction",
     technologies: [],
     achievements: [
       "Current practice spans ML / AI engineering and production agentic systems.",
     ],
     tags: ["independent", "genai", "ml-ai"],
-    evidenceIds: [
-      "exp.ml-ai.seven-plus-years",
-      "exp.genai.three-plus-years",
-    ],
+    evidenceIds: [],
     evidenceStatus: "directional",
   },
 ];
@@ -141,4 +138,13 @@ export function createCareerTimelineView(
     ...entry,
     highlighted: isCareerEntryHighlighted(entry, highlightEvidenceIds),
   }));
+}
+
+export function getCareerTimelineStatus({
+  evidenceStatus,
+  highlighted,
+}: Pick<CareerTimelineViewEntry, "evidenceStatus" | "highlighted">): string {
+  const status =
+    evidenceStatus === "directional" ? "Directional era" : "Verified fact";
+  return highlighted ? `${status} · Relevant evidence` : status;
 }

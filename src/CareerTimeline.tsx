@@ -3,6 +3,7 @@ import {
   CAREER_TIMELINE_ENTRIES,
   CAREER_TIMELINE_FILTERS,
   createCareerTimelineView,
+  getCareerTimelineStatus,
   type CareerTimelineEntry,
   type CareerTimelineFilter,
 } from "./careerTimeline";
@@ -114,7 +115,7 @@ export default function CareerTimeline({
                     <p className="timeline-organization">{entry.organizationLabel}</p>
                   </div>
                   <span className="timeline-status">
-                    {entry.highlighted ? "Relevant evidence" : entry.evidenceStatus}
+                    {getCareerTimelineStatus(entry)}
                   </span>
                 </div>
 
@@ -156,7 +157,7 @@ export default function CareerTimeline({
       ) : (
         <div className="timeline-empty" role="status">
           <strong>No published milestone matches these filters.</strong>
-          <p>Clear a filter to return to the verified public timeline.</p>
+          <p>Clear a filter to return to the grounded public timeline.</p>
         </div>
       )}
 
