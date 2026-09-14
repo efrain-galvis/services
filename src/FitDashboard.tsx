@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import { FitAssessment, scoreBand } from "./fitAssessment";
 
 type Props = {
@@ -62,10 +61,20 @@ export default function FitDashboard({ assessment, onClose }: Props) {
       <div className="fit-overview">
         <div
           className="fit-score"
-          style={{ "--fit-score": `${assessment.overallScore * 3.6}deg` } as CSSProperties}
           role="img"
           aria-label={`Overall fit score: ${assessment.overallScore} percent, ${assessment.label}`}
         >
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <circle className="fit-score-track" cx="50" cy="50" r="44" pathLength="100" />
+            <circle
+              className="fit-score-value"
+              cx="50"
+              cy="50"
+              r="44"
+              pathLength="100"
+              strokeDasharray={`${assessment.overallScore} ${100 - assessment.overallScore}`}
+            />
+          </svg>
           <div>
             <strong>{assessment.overallScore}<span>%</span></strong>
             <small>overall fit</small>
@@ -93,16 +102,14 @@ export default function FitDashboard({ assessment, onClose }: Props) {
                   <span>{dimension.name}</span>
                   <strong>{dimension.score}%</strong>
                 </div>
-                <div
-                  className="fit-meter"
-                  role="meter"
+                <progress
+                  className={`fit-meter ${band}`}
                   aria-label={`${dimension.name}: ${dimension.score} percent, ${band}`}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={dimension.score}
+                  max={100}
+                  value={dimension.score}
                 >
-                  <span className={`fit-meter-fill ${band}`} style={{ width: `${dimension.score}%` }} />
-                </div>
+                  {dimension.score}%
+                </progress>
                 {dimension.evidence.length > 0 && (
                   <Evidence title={`${dimension.name} evidence`} evidence={dimension.evidence} />
                 )}

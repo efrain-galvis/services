@@ -125,9 +125,12 @@ footer { display: flex; justify-content: space-between; gap: 2rem; border-top: 1
 }
 .fit-score {
   display: grid; place-items: center; width: clamp(8.5rem, 15vw, 10.5rem); aspect-ratio: 1; border-radius: 50%;
-  background: conic-gradient(var(--acid) var(--fit-score), #35352f 0); position: relative;
+  position: relative;
 }
-.fit-score::after { content: ""; position: absolute; inset: .52rem; border-radius: inherit; background: #171715; }
+.fit-score svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.fit-score circle { fill: none; stroke-width: 7; }
+.fit-score-track { stroke: #35352f; }
+.fit-score-value { stroke: var(--acid); stroke-linecap: round; }
 .fit-score > div { z-index: 1; display: grid; text-align: center; }
 .fit-score strong { font-size: clamp(2rem, 4vw, 3.4rem); line-height: 1; letter-spacing: -.06em; }
 .fit-score strong span { color: var(--acid); font-size: .45em; letter-spacing: 0; }
@@ -155,10 +158,14 @@ footer { display: flex; justify-content: space-between; gap: 2rem; border-top: 1
 .fit-dimension { min-width: 0; }
 .fit-dimension-heading { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: .55rem; font-size: .83rem; }
 .fit-dimension-heading strong { font-family: "JetBrains Mono", monospace; font-size: .74rem; }
-.fit-meter { height: .35rem; overflow: hidden; border-radius: 999px; background: #35352f; }
-.fit-meter-fill { display: block; height: 100%; border-radius: inherit; background: var(--acid); }
-.fit-meter-fill.partial { background: #f2c45c; }
-.fit-meter-fill.gap { background: var(--orange); }
+.fit-meter { display: block; width: 100%; height: .35rem; overflow: hidden; border: 0; border-radius: 999px; background: #35352f; appearance: none; }
+.fit-meter::-webkit-progress-bar { border-radius: inherit; background: #35352f; }
+.fit-meter::-webkit-progress-value { border-radius: inherit; background: var(--acid); }
+.fit-meter::-moz-progress-bar { border-radius: inherit; background: var(--acid); }
+.fit-meter.partial::-webkit-progress-value { background: #f2c45c; }
+.fit-meter.partial::-moz-progress-bar { background: #f2c45c; }
+.fit-meter.gap::-webkit-progress-value { background: var(--orange); }
+.fit-meter.gap::-moz-progress-bar { background: var(--orange); }
 .fit-dimension .fit-evidence { margin-top: .5rem; border: 0; }
 .fit-dimension .fit-evidence summary { padding: .4rem 0; color: var(--muted); font-size: .68rem; }
 .fit-dimension .fit-evidence summary > span:first-child { text-transform: none; }
