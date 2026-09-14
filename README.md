@@ -58,6 +58,15 @@ The workflow does not build the Vite application and does not use
 
 Do not commit `dist/` or `assets/build/`; both are ignored.
 
+## Career timeline content
+
+`CareerTimeline` intentionally ships with only the career milestones supported
+by published knowledge. It does not infer employer names, exact titles,
+technologies, or career progression. Fuller timeline content is owned by Efrain
+through updates to the site-agent career knowledge; keep
+`src/careerTimeline.ts` synchronized with that source rather than expanding it
+editorially in this frontend.
+
 ## Safety boundaries
 
 - LYRA is identified as an AI and never presents herself as Efrain.
