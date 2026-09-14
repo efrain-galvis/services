@@ -19,6 +19,7 @@ import { DEFAULT_SITE_AGENT_URL } from "./config";
 import CareerTimeline from "./CareerTimeline";
 import FitDashboard from "./FitDashboard";
 import PlayerCard from "./PlayerCard";
+import ProjectGrid from "./ProjectGrid";
 import {
   adaptFitAssessment,
   FIT_ASSESSMENT_FIXTURE,
@@ -37,6 +38,8 @@ const SITE_TOKEN =
   import.meta.env.VITE_SITE_TOKEN || "4f4ec8bc502fe37e4de9805169f4cb89";
 const SHOW_FIT_FIXTURE =
   import.meta.env.DEV || import.meta.env.VITE_FIT_DRAFT === "true";
+const SHOW_PROJECT_FIXTURE =
+  import.meta.env.DEV || import.meta.env.VITE_PROJECT_DRAFT === "true";
 const REQUEST_HEADERS: Record<string, string> = SITE_TOKEN
   ? { "X-Site-Token": SITE_TOKEN }
   : {};
@@ -349,7 +352,9 @@ function LyraHero() {
   const starters = useStarters();
   const [runtimeFailed, setRuntimeFailed] = useState(false);
   const [fallbackDraft, setFallbackDraft] = useState("");
-  const [activePanel, setActivePanel] = useState<"fit" | "player" | "timeline" | null>(null);
+  const [activePanel, setActivePanel] = useState<
+    "fit" | "player" | "projects" | "timeline" | null
+  >(null);
   const [timelineFilters, setTimelineFilters] = useState<string[]>([]);
   const handleRuntimeFailure = useCallback((draft = "") => {
     setFallbackDraft(draft);
@@ -388,6 +393,12 @@ function LyraHero() {
             onClose={() => setActivePanel(null)}
           />
         )}
+        {activePanel === "projects" && (
+          <ProjectGrid
+            showDevelopmentFixture={SHOW_PROJECT_FIXTURE}
+            onClose={() => setActivePanel(null)}
+          />
+        )}
         <div className="chat-surface" hidden={activePanel !== null}>
           {useCopilot ? (
             <CopilotChunkBoundary onFailure={handleRuntimeFailure}>
@@ -406,6 +417,9 @@ function LyraHero() {
           <div className="fit-entry">
             <span>Explore the professional profile</span>
             <div>
+              <button type="button" onClick={() => setActivePanel("projects")}>
+                View selected work <span aria-hidden="true">↗</span>
+              </button>
               <button type="button" onClick={() => setActivePanel("timeline")}>
                 View career timeline <span aria-hidden="true">↗</span>
               </button>
