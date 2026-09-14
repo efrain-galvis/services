@@ -67,17 +67,21 @@ export function adaptFitAssessment(value: unknown): FitAssessment | null {
       !isText(item.level) ||
       !MATCH_LEVELS.has(item.level as FitMatchLevel) ||
       !isConfidence(item.confidence) ||
-      (item.evidence_id !== undefined && !isText(item.evidence_id)) ||
-      (item.evidence_text !== undefined && !isText(item.evidence_text))
+      (item.evidence_id != null && !isText(item.evidence_id)) ||
+      (item.evidence_text != null && !isText(item.evidence_text))
     ) {
       return null;
     }
+    const evidenceId =
+      isText(item.evidence_id) && item.evidence_id.trim() ? item.evidence_id : undefined;
+    const evidenceText =
+      isText(item.evidence_text) && item.evidence_text.trim() ? item.evidence_text : undefined;
     matches.push({
       requirement: item.requirement,
       level: item.level as FitMatchLevel,
       confidence: item.confidence,
-      ...(item.evidence_id === undefined ? {} : { evidence_id: item.evidence_id }),
-      ...(item.evidence_text === undefined ? {} : { evidence_text: item.evidence_text }),
+      ...(evidenceId === undefined ? {} : { evidence_id: evidenceId }),
+      ...(evidenceText === undefined ? {} : { evidence_text: evidenceText }),
     });
   }
 

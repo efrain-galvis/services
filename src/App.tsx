@@ -355,30 +355,31 @@ function LyraHero() {
         </p>
       </div>
       <div className="chat-frame">
-        {showFitPanel ? (
+        {showFitPanel && (
           <FitAssessmentPanel onClose={() => setShowFitPanel(false)} />
-        ) : useCopilot ? (
-          <CopilotChunkBoundary onFailure={handleRuntimeFailure}>
-            <Suspense fallback={<p className="loading-state">Connecting LYRA…</p>}>
-              <CopilotSurface
-                runtimeUrl={RUNTIME_URL}
-                agentId={AGENT_ID}
-                starters={starters}
-                onConnectionFailure={handleRuntimeFailure}
-              />
-            </Suspense>
-          </CopilotChunkBoundary>
-        ) : (
-          <FallbackChat starters={starters} initialDraft={fallbackDraft} />
         )}
-        {!showFitPanel && (
+        <div className="chat-surface" hidden={showFitPanel}>
+          {useCopilot ? (
+            <CopilotChunkBoundary onFailure={handleRuntimeFailure}>
+              <Suspense fallback={<p className="loading-state">Connecting LYRA…</p>}>
+                <CopilotSurface
+                  runtimeUrl={RUNTIME_URL}
+                  agentId={AGENT_ID}
+                  starters={starters}
+                  onConnectionFailure={handleRuntimeFailure}
+                />
+              </Suspense>
+            </CopilotChunkBoundary>
+          ) : (
+            <FallbackChat starters={starters} initialDraft={fallbackDraft} />
+          )}
           <div className="fit-entry">
             <span>Have a role in mind?</span>
             <button type="button" onClick={() => setShowFitPanel(true)}>
               Assess role fit <span aria-hidden="true">↗</span>
             </button>
           </div>
-        )}
+        </div>
       </div>
       <p className="privacy-note">Keep names, email addresses, and confidential details out of chat. Use Book for anything personal.</p>
     </section>

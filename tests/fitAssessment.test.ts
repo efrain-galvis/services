@@ -40,6 +40,49 @@ describe("fit assessment adapter", () => {
     });
   });
 
+  it("accepts Pydantic null evidence fields and omits blank evidence ids", () => {
+    const assessment = adaptFitAssessment({
+      role_title: "AI Engineer",
+      overall_score: 24,
+      label: "No evidence",
+      assessment_type: "AI estimate",
+      dimensions: [{ name: "Domain experience", score: 10 }],
+      matches: [
+        {
+          requirement: "Five years of domain experience",
+          level: "No evidence",
+          evidence_id: null,
+          evidence_text: null,
+          confidence: 0.94,
+        },
+        {
+          requirement: "Production ownership",
+          level: "Partial",
+          evidence_id: "",
+          evidence_text: "Some adjacent experience is documented.",
+          confidence: 0.61,
+        },
+      ],
+      gaps: ["Direct domain experience is not established."],
+      summary: "Available evidence is limited.",
+    });
+
+    expect(assessment?.matches).toEqual([
+      {
+        requirement: "Five years of domain experience",
+        level: "No evidence",
+        confidence: 0.94,
+      },
+      {
+        requirement: "Production ownership",
+        level: "Partial",
+        evidence_text: "Some adjacent experience is documented.",
+        confidence: 0.61,
+      },
+    ]);
+    expect(assessment?.matches[1]).not.toHaveProperty("evidence_id");
+  });
+
   it.each([
     ["invented label", { label: "Good" }],
     ["invented match level", { matches: [{ requirement: "Build", level: "Limited", confidence: 0.5 }] }],
