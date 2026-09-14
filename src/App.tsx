@@ -16,6 +16,8 @@ import {
   writeChatTurns,
 } from "./chatLimits";
 import { DEFAULT_SITE_AGENT_URL } from "./config";
+import FitDashboard from "./FitDashboard";
+import { FIT_ASSESSMENT_FIXTURE } from "./fitAssessment";
 
 const CopilotSurface = lazy(() => import("./CopilotSurface"));
 
@@ -151,6 +153,7 @@ function FallbackChat({
   ]);
   const [input, setInput] = useState(initialDraft);
   const [busy, setBusy] = useState(false);
+  const [showFixture, setShowFixture] = useState(false);
   const [initialSession] = useState(readChatSession);
   const [sessionId, setSessionId] = useState(initialSession.sessionId);
   const [turns, setTurns] = useState(initialSession.turns);
@@ -210,6 +213,20 @@ function FallbackChat({
           </p>
         ))}
         {spent && <p className="message error">{CHAT_LIMIT_NOTE}</p>}
+        {showFixture ? (
+          <FitDashboard
+            assessment={FIT_ASSESSMENT_FIXTURE}
+            onClose={() => setShowFixture(false)}
+          />
+        ) : (
+          <button
+            className="fit-preview-trigger"
+            type="button"
+            onClick={() => setShowFixture(true)}
+          >
+            Preview a fit assessment <span aria-hidden="true">↗</span>
+          </button>
+        )}
       </div>
       {messages.length === 1 && !spent && (
         <StarterList starters={starters} onSelect={send} />
