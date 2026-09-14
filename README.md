@@ -35,24 +35,15 @@ the production cutover sequence.
 
 ## GitHub Pages
 
-Source and generated output are separate. The repository contains only the
-Vite/React source; `.github/workflows/pages.yml` builds `dist/` on pushes to
-`main` and deploys that artifact with GitHub Pages Actions.
+Production is hosted by Vercel at
+[https://efrain-galvis.info](https://efrain-galvis.info).
 
-```bash
-npm run check
-npm run build
-```
-
-Before merging, set **Settings → Pages → Build and deployment → Source** to
-**GitHub Actions**. Until that one-time switch, the unchanged legacy root site
-continues to be served from `main`.
-
-The workflow can read optional repository variables `SITE_AGENT_URL`,
-`COPILOTKIT_RUNTIME_URL`, `COPILOTKIT_AGENT_ID`, and `SITE_TOKEN`. Values
-prefixed with `VITE_` are compiled into public browser code, so none may be a
-secret. `public/CNAME` and `public/.nojekyll` preserve the custom domain and
-Jekyll bypass in the deployed artifact.
+GitHub Pages is only a secondary pointer at
+[https://efrain-galvis.github.io/services/](https://efrain-galvis.github.io/services/).
+On pushes to `main`, `.github/workflows/pages.yml` copies
+`docs/pages-card.html` to `index.html` and publishes that single-page artifact.
+The workflow does not build the Vite application and does not use
+`public/CNAME`.
 
 Do not commit `dist/` or `assets/build/`; both are ignored.
 
