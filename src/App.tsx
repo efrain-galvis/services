@@ -17,6 +17,7 @@ import {
 } from "./chatLimits";
 import { DEFAULT_SITE_AGENT_URL } from "./config";
 import FitDashboard from "./FitDashboard";
+import PlayerCard from "./PlayerCard";
 import {
   adaptFitAssessment,
   FIT_ASSESSMENT_FIXTURE,
@@ -250,6 +251,7 @@ function FallbackChat({
 function FitAssessmentPanel({ onClose }: { onClose: () => void }) {
   const [jobDescription, setJobDescription] = useState("");
   const [assessment, setAssessment] = useState<FitAssessment | null>(null);
+  const [showRoleProfile, setShowRoleProfile] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -278,7 +280,23 @@ function FitAssessmentPanel({ onClose }: { onClose: () => void }) {
   }
 
   if (assessment) {
-    return <FitDashboard assessment={assessment} onClose={onClose} />;
+    if (showRoleProfile) {
+      return (
+        <PlayerCard
+          fitDimensions={assessment.dimensions}
+          fitOverallScore={assessment.overall_score}
+          fitRoleTitle={assessment.role_title}
+          onClose={() => setShowRoleProfile(false)}
+        />
+      );
+    }
+    return (
+      <FitDashboard
+        assessment={assessment}
+        onClose={onClose}
+        onViewPlayerProfile={() => setShowRoleProfile(true)}
+      />
+    );
   }
 
   return (
@@ -330,7 +348,7 @@ function LyraHero() {
   const starters = useStarters();
   const [runtimeFailed, setRuntimeFailed] = useState(false);
   const [fallbackDraft, setFallbackDraft] = useState("");
-  const [showFitPanel, setShowFitPanel] = useState(false);
+  const [activePanel, setActivePanel] = useState<"fit" | "player" | null>(null);
   const handleRuntimeFailure = useCallback((draft = "") => {
     setFallbackDraft(draft);
     setRuntimeFailed(true);
@@ -355,10 +373,13 @@ function LyraHero() {
         </p>
       </div>
       <div className="chat-frame">
-        {showFitPanel && (
-          <FitAssessmentPanel onClose={() => setShowFitPanel(false)} />
+        {activePanel === "fit" && (
+          <FitAssessmentPanel onClose={() => setActivePanel(null)} />
         )}
-        <div className="chat-surface" hidden={showFitPanel}>
+        {activePanel === "player" && (
+          <PlayerCard onClose={() => setActivePanel(null)} />
+        )}
+        <div className="chat-surface" hidden={activePanel !== null}>
           {useCopilot ? (
             <CopilotChunkBoundary onFailure={handleRuntimeFailure}>
               <Suspense fallback={<p className="loading-state">Connecting LYRA…</p>}>
@@ -374,10 +395,15 @@ function LyraHero() {
             <FallbackChat starters={starters} initialDraft={fallbackDraft} />
           )}
           <div className="fit-entry">
-            <span>Have a role in mind?</span>
-            <button type="button" onClick={() => setShowFitPanel(true)}>
-              Assess role fit <span aria-hidden="true">↗</span>
-            </button>
+            <span>Explore the professional profile</span>
+            <div>
+              <button type="button" onClick={() => setActivePanel("player")}>
+                View skill profile <span aria-hidden="true">↗</span>
+              </button>
+              <button type="button" onClick={() => setActivePanel("fit")}>
+                Assess role fit <span aria-hidden="true">↗</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

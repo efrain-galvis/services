@@ -5,6 +5,17 @@ surface and the consulting portfolio around it.
 
 Live: https://efrain-galvis.info
 
+## Player profile
+
+Open **View skill profile** below LYRA's chat composer to render the baseline
+PlayerCard and SkillRadar. After completing **Assess role fit**, choose
+**View role profile** to reuse that assessment's dimensions and overall score
+in a clearly labeled role-relative card.
+
+Baseline scores live in `src/playerProfile.ts`. They are conservative,
+directional editorial defaults based on the portfolio represented by this site,
+not independent credentials, and can be tuned as the source material evolves.
+
 ## Local development
 
 Requires Node.js 22.x, matching the Vercel Runtime and `package.json`.
