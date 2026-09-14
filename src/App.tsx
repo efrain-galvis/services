@@ -33,6 +33,8 @@ const AGENT_ID = import.meta.env.VITE_COPILOTKIT_AGENT_ID || "lyra";
 // This is a public anti-scraping speed bump, never a secret or auth boundary.
 const SITE_TOKEN =
   import.meta.env.VITE_SITE_TOKEN || "4f4ec8bc502fe37e4de9805169f4cb89";
+const SHOW_FIT_FIXTURE =
+  import.meta.env.DEV || import.meta.env.VITE_FIT_DRAFT === "true";
 const REQUEST_HEADERS: Record<string, string> = SITE_TOKEN
   ? { "X-Site-Token": SITE_TOKEN }
   : {};
@@ -307,7 +309,7 @@ function FitAssessmentPanel({ onClose }: { onClose: () => void }) {
           <button type="submit" disabled={busy || !jobDescription.trim()}>
             {busy ? "Assessing…" : "Assess fit"}
           </button>
-          {import.meta.env.DEV && (
+          {SHOW_FIT_FIXTURE && (
             <button
               className="fit-fixture-button"
               type="button"
