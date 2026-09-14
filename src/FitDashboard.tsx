@@ -3,6 +3,7 @@ import type { FitAssessment, FitMatch } from "./fitAssessment";
 type Props = {
   assessment: FitAssessment;
   onClose?: () => void;
+  onViewPlayerProfile?: () => void;
 };
 
 function MatchEvidence({ match }: { match: FitMatch }) {
@@ -30,7 +31,11 @@ function MatchEvidence({ match }: { match: FitMatch }) {
   );
 }
 
-export default function FitDashboard({ assessment, onClose }: Props) {
+export default function FitDashboard({
+  assessment,
+  onClose,
+  onViewPlayerProfile,
+}: Props) {
   const counts = assessment.matches.reduce(
     (result, match) => ({ ...result, [match.level]: result[match.level] + 1 }),
     { Strong: 0, Partial: 0, "No evidence": 0 },
@@ -126,7 +131,14 @@ export default function FitDashboard({ assessment, onClose }: Props) {
 
       <footer className="fit-footer">
         <p>{assessment.assessment_type}. Validate thin or missing evidence in conversation.</p>
-        <a href="#book">Discuss this fit <span aria-hidden="true">↗</span></a>
+        <div className="fit-footer-actions">
+          {onViewPlayerProfile && assessment.dimensions.length > 0 && (
+            <button type="button" onClick={onViewPlayerProfile}>
+              View role profile <span aria-hidden="true">↗</span>
+            </button>
+          )}
+          <a href="#book">Discuss this fit <span aria-hidden="true">↗</span></a>
+        </div>
       </footer>
     </section>
   );
