@@ -32,7 +32,7 @@ const MATCH_LEVELS = new Set<FitMatchLevel>(["Strong", "Partial", "No evidence"]
 const isRecord = (value: unknown): value is UnknownRecord =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 const isScore = (value: unknown): value is number =>
-  typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 100;
+  typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 100;
 const isConfidence = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1;
 const isText = (value: unknown): value is string => typeof value === "string";
