@@ -66,4 +66,30 @@ describe("career timeline adapters", () => {
     ]);
     expect(entries[1]).not.toHaveProperty("highlighted");
   });
+
+  it("grounds the published timeline in known evidence without employer names", () => {
+    expect(CAREER_TIMELINE_ENTRIES).toHaveLength(5);
+    expect(CAREER_TIMELINE_ENTRIES.flatMap(({ evidenceIds }) => evidenceIds))
+      .toEqual(expect.arrayContaining([
+        "exp.data-ai.since-2014",
+        "exp.ml-ai.seven-plus-years",
+        "exp.genai.three-plus-years",
+        "exp.us-enterprise.since-2021",
+      ]));
+    expect(
+      CAREER_TIMELINE_ENTRIES
+        .filter(({ dateRange }) => dateRange.startsWith("~"))
+        .every(({ evidenceStatus }) => evidenceStatus === "directional"),
+    ).toBe(true);
+    expect(
+      CAREER_TIMELINE_ENTRIES.every(({ organizationLabel }) =>
+        [
+          "Early career analytics",
+          "Organization not published",
+          "US enterprise clients",
+          "Independent practice",
+        ].includes(organizationLabel),
+      ),
+    ).toBe(true);
+  });
 });

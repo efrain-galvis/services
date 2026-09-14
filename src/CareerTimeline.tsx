@@ -48,8 +48,8 @@ export default function CareerTimeline({
           <p className="timeline-kicker">LYRA / career timeline</p>
           <h2 id={titleId}>Published career milestones</h2>
           <p>
-            A deliberately thin view of verified public facts—not a complete
-            employment history.
+            A deliberately thin view of grounded public facts and directional
+            eras—not a complete employment history.
           </p>
         </div>
         {onClose && (
@@ -165,7 +165,7 @@ export default function CareerTimeline({
           Employer names, exact titles, progression, and technologies remain
           unpublished. Missing detail is not evidence of missing experience.
         </p>
-        <span>Verified public facts only</span>
+        <span>Grounded / directional</span>
       </footer>
     </section>
   );
