@@ -16,6 +16,12 @@ import {
   writeChatTurns,
 } from "./chatLimits";
 import { DEFAULT_SITE_AGENT_URL } from "./config";
+import FitDashboard from "./FitDashboard";
+import {
+  adaptFitAssessment,
+  FIT_ASSESSMENT_FIXTURE,
+  type FitAssessment,
+} from "./fitAssessment";
 
 const CopilotSurface = lazy(() => import("./CopilotSurface"));
 
@@ -27,6 +33,8 @@ const AGENT_ID = import.meta.env.VITE_COPILOTKIT_AGENT_ID || "lyra";
 // This is a public anti-scraping speed bump, never a secret or auth boundary.
 const SITE_TOKEN =
   import.meta.env.VITE_SITE_TOKEN || "4f4ec8bc502fe37e4de9805169f4cb89";
+const SHOW_FIT_FIXTURE =
+  import.meta.env.DEV || import.meta.env.VITE_FIT_DRAFT === "true";
 const REQUEST_HEADERS: Record<string, string> = SITE_TOKEN
   ? { "X-Site-Token": SITE_TOKEN }
   : {};
@@ -239,10 +247,90 @@ function FallbackChat({
   );
 }
 
+function FitAssessmentPanel({ onClose }: { onClose: () => void }) {
+  const [jobDescription, setJobDescription] = useState("");
+  const [assessment, setAssessment] = useState<FitAssessment | null>(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    const description = jobDescription.trim();
+    if (!description || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const data = await postJson("/v1/fit", {
+        job_description: description,
+      }, 45_000);
+      const nextAssessment = adaptFitAssessment(data);
+      if (!nextAssessment) {
+        throw new Error("Invalid fit assessment response");
+      }
+      setAssessment(nextAssessment);
+    } catch {
+      setError(
+        "LYRA could not assess this role right now. Your job description is still here so you can retry.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (assessment) {
+    return <FitDashboard assessment={assessment} onClose={onClose} />;
+  }
+
+  return (
+    <section className="fit-request" aria-labelledby="fit-request-title">
+      <div className="fit-request-heading">
+        <div>
+          <p className="fit-kicker">LYRA / role fit</p>
+          <h2 id="fit-request-title">Assess a role against the work.</h2>
+          <p>Paste a job description. LYRA will compare its requirements with Efrain’s documented experience.</p>
+        </div>
+        <button className="fit-close" type="button" onClick={onClose} aria-label="Close role assessment">
+          ×
+        </button>
+      </div>
+      <form onSubmit={submit}>
+        <label htmlFor="fit-job-description">Job description</label>
+        <textarea
+          id="fit-job-description"
+          value={jobDescription}
+          rows={12}
+          maxLength={12_000}
+          required
+          disabled={busy}
+          placeholder="Paste the role title, responsibilities, and requirements…"
+          onChange={(event) => setJobDescription(event.target.value)}
+        />
+        <div className="fit-request-actions">
+          <button type="submit" disabled={busy || !jobDescription.trim()}>
+            {busy ? "Assessing…" : "Assess fit"}
+          </button>
+          {SHOW_FIT_FIXTURE && (
+            <button
+              className="fit-fixture-button"
+              type="button"
+              onClick={() => setAssessment(FIT_ASSESSMENT_FIXTURE)}
+            >
+              Load development fixture
+            </button>
+          )}
+        </div>
+        <p className="fit-request-note">AI estimate only. Do not paste personal or confidential information.</p>
+        <p className="form-status" aria-live="polite">{error}</p>
+      </form>
+    </section>
+  );
+}
+
 function LyraHero() {
   const starters = useStarters();
   const [runtimeFailed, setRuntimeFailed] = useState(false);
   const [fallbackDraft, setFallbackDraft] = useState("");
+  const [showFitPanel, setShowFitPanel] = useState(false);
   const handleRuntimeFailure = useCallback((draft = "") => {
     setFallbackDraft(draft);
     setRuntimeFailed(true);
@@ -267,20 +355,31 @@ function LyraHero() {
         </p>
       </div>
       <div className="chat-frame">
-        {useCopilot ? (
-          <CopilotChunkBoundary onFailure={handleRuntimeFailure}>
-            <Suspense fallback={<p className="loading-state">Connecting LYRA…</p>}>
-              <CopilotSurface
-                runtimeUrl={RUNTIME_URL}
-                agentId={AGENT_ID}
-                starters={starters}
-                onConnectionFailure={handleRuntimeFailure}
-              />
-            </Suspense>
-          </CopilotChunkBoundary>
-        ) : (
-          <FallbackChat starters={starters} initialDraft={fallbackDraft} />
+        {showFitPanel && (
+          <FitAssessmentPanel onClose={() => setShowFitPanel(false)} />
         )}
+        <div className="chat-surface" hidden={showFitPanel}>
+          {useCopilot ? (
+            <CopilotChunkBoundary onFailure={handleRuntimeFailure}>
+              <Suspense fallback={<p className="loading-state">Connecting LYRA…</p>}>
+                <CopilotSurface
+                  runtimeUrl={RUNTIME_URL}
+                  agentId={AGENT_ID}
+                  starters={starters}
+                  onConnectionFailure={handleRuntimeFailure}
+                />
+              </Suspense>
+            </CopilotChunkBoundary>
+          ) : (
+            <FallbackChat starters={starters} initialDraft={fallbackDraft} />
+          )}
+          <div className="fit-entry">
+            <span>Have a role in mind?</span>
+            <button type="button" onClick={() => setShowFitPanel(true)}>
+              Assess role fit <span aria-hidden="true">↗</span>
+            </button>
+          </div>
+        </div>
       </div>
       <p className="privacy-note">Keep names, email addresses, and confidential details out of chat. Use Book for anything personal.</p>
     </section>
