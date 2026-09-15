@@ -243,7 +243,7 @@ function PortfolioTools({
     {
       name: "show_availability",
       description:
-        "Open the verified availability picker. Never invent slots or ask for personal information in chat.",
+        "Open the verified availability picker. Available consultation slots are weekdays 8:00–9:00 and 16:00–18:00 America/Bogota; never invent slots outside those windows or ask for personal information in chat.",
       agentId,
       parameters: z.object({}),
       handler: async () =>
@@ -258,7 +258,7 @@ function PortfolioTools({
     {
       name: "start_booking",
       description:
-        "Open the private booking flow and set its shared state to picking. The visitor enters all personal information directly in the UI.",
+        "Open the private booking flow and set its shared state to picking. Available consultation slots are weekdays 8:00–9:00 and 16:00–18:00 America/Bogota; never invent slots outside those windows. The visitor enters all personal information directly in the UI; never collect it in chat.",
       agentId,
       parameters: z.object({}),
       handler: async () =>
