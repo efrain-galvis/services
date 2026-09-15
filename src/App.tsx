@@ -618,8 +618,6 @@ export default function App() {
     ) {
       return;
     }
-    handledNavigationRequest.current = navigationState.navigation_request;
-
     const targetId =
       navigationState.selected_project &&
       navigationState.active_section === "selected-work"
@@ -628,6 +626,7 @@ export default function App() {
         ? "book"
         : navigationState.active_section;
     const frame = window.requestAnimationFrame(() => {
+      handledNavigationRequest.current = navigationState.navigation_request;
       const target = document.getElementById(targetId);
       if (!target) return;
       target.scrollIntoView({
