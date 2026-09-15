@@ -60,8 +60,12 @@ describe("portfolio frontend action handlers", () => {
       section_id: "contact",
     });
     expect(dispatch.mock.calls.map(([action]) => action)).toEqual([
-      { type: "navigate", sectionId: "career-timeline" },
-      { type: "navigate", sectionId: "contact" },
+      {
+        type: "navigate",
+        sectionId: "career-timeline",
+        requestFocus: true,
+      },
+      { type: "navigate", sectionId: "contact", requestFocus: true },
     ]);
   });
 
@@ -85,6 +89,7 @@ describe("portfolio frontend action handlers", () => {
     expect(dispatch).toHaveBeenCalledWith({
       type: "open_project",
       projectId: null,
+      requestFocus: true,
     });
 
     expect(actions.openProject("published")).toEqual({

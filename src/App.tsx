@@ -8,6 +8,7 @@ import {
   useEffect,
   useMemo,
   useReducer,
+  useRef,
   useState,
 } from "react";
 import {
@@ -608,10 +609,22 @@ export default function App() {
     portfolioNavigationReducer,
     INITIAL_PORTFOLIO_STATE,
   );
+  const handledNavigationRequest = useRef(0);
 
   useEffect(() => {
+    if (
+      navigationState.navigation_request === 0 ||
+      handledNavigationRequest.current === navigationState.navigation_request
+    ) {
+      return;
+    }
+    handledNavigationRequest.current = navigationState.navigation_request;
+
     const targetId =
-      navigationState.active_section === "contact"
+      navigationState.selected_project &&
+      navigationState.active_section === "selected-work"
+        ? `project-${navigationState.selected_project}`
+        : navigationState.active_section === "contact"
         ? "book"
         : navigationState.active_section;
     const frame = window.requestAnimationFrame(() => {
@@ -641,6 +654,7 @@ export default function App() {
   }, [
     navigationState.active_section,
     navigationState.highlighted_section,
+    navigationState.navigation_request,
     navigationState.selected_project,
   ]);
 
@@ -649,7 +663,7 @@ export default function App() {
     sectionId: PortfolioSectionId,
   ) => {
     event.preventDefault();
-    dispatchNavigation({ type: "navigate", sectionId });
+    dispatchNavigation({ type: "navigate", sectionId, requestFocus: true });
   };
 
   return (

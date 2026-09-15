@@ -16,6 +16,7 @@ export type PortfolioNavigationState = {
   timeline_filter: string[];
   project_filters: string[];
   highlighted_section: PortfolioSectionId | null;
+  navigation_request: number;
 };
 
 export const INITIAL_PORTFOLIO_STATE: PortfolioNavigationState = {
@@ -24,14 +25,35 @@ export const INITIAL_PORTFOLIO_STATE: PortfolioNavigationState = {
   timeline_filter: [],
   project_filters: [],
   highlighted_section: null,
+  navigation_request: 0,
 };
 
 export type PortfolioNavigationAction =
-  | { type: "navigate"; sectionId: PortfolioSectionId }
-  | { type: "highlight"; sectionId: PortfolioSectionId }
-  | { type: "open_project"; projectId: string | null }
-  | { type: "filter_projects"; filters: string[] }
-  | { type: "open_timeline"; filters: string[] }
+  | {
+      type: "navigate";
+      sectionId: PortfolioSectionId;
+      requestFocus?: boolean;
+    }
+  | {
+      type: "highlight";
+      sectionId: PortfolioSectionId;
+      requestFocus?: boolean;
+    }
+  | {
+      type: "open_project";
+      projectId: string | null;
+      requestFocus?: boolean;
+    }
+  | {
+      type: "filter_projects";
+      filters: string[];
+      requestFocus?: boolean;
+    }
+  | {
+      type: "open_timeline";
+      filters: string[];
+      requestFocus?: boolean;
+    }
   | { type: "clear_highlight" };
 
 function normalizedFilters(filters: string[]): string[] {
@@ -57,18 +79,23 @@ export function portfolioNavigationReducer(
   state: PortfolioNavigationState,
   action: PortfolioNavigationAction,
 ): PortfolioNavigationState {
+  const navigationRequest = (requestFocus?: boolean) =>
+    requestFocus ? state.navigation_request + 1 : state.navigation_request;
+
   switch (action.type) {
     case "navigate":
       return {
         ...state,
         active_section: action.sectionId,
         highlighted_section: null,
+        navigation_request: navigationRequest(action.requestFocus),
       };
     case "highlight":
       return {
         ...state,
         active_section: action.sectionId,
         highlighted_section: action.sectionId,
+        navigation_request: navigationRequest(action.requestFocus),
       };
     case "open_project":
       return {
@@ -76,6 +103,7 @@ export function portfolioNavigationReducer(
         active_section: "selected-work",
         selected_project: action.projectId,
         highlighted_section: null,
+        navigation_request: navigationRequest(action.requestFocus),
       };
     case "filter_projects":
       return {
@@ -84,6 +112,7 @@ export function portfolioNavigationReducer(
         project_filters: normalizedFilters(action.filters),
         selected_project: null,
         highlighted_section: null,
+        navigation_request: navigationRequest(action.requestFocus),
       };
     case "open_timeline":
       return {
@@ -91,6 +120,7 @@ export function portfolioNavigationReducer(
         active_section: "career-timeline",
         timeline_filter: normalizedFilters(action.filters),
         highlighted_section: null,
+        navigation_request: navigationRequest(action.requestFocus),
       };
     case "clear_highlight":
       return { ...state, highlighted_section: null };
@@ -116,7 +146,7 @@ export function createPortfolioActionHandlers(
           available_sections: PORTFOLIO_SECTIONS,
         };
       }
-      dispatch({ type: "navigate", sectionId });
+      dispatch({ type: "navigate", sectionId, requestFocus: true });
       return { ok: true, section_id: sectionId };
     },
 
@@ -128,7 +158,7 @@ export function createPortfolioActionHandlers(
           available_sections: PORTFOLIO_SECTIONS,
         };
       }
-      dispatch({ type: "highlight", sectionId });
+      dispatch({ type: "highlight", sectionId, requestFocus: true });
       return { ok: true, section_id: sectionId };
     },
 
@@ -138,6 +168,7 @@ export function createPortfolioActionHandlers(
       dispatch({
         type: "open_project",
         projectId: projectExists ? normalizedId : null,
+        requestFocus: true,
       });
       return projectExists
         ? { ok: true, project_id: normalizedId }
@@ -150,17 +181,21 @@ export function createPortfolioActionHandlers(
     },
 
     filterProjects(filters: string[]) {
-      dispatch({ type: "filter_projects", filters });
+      dispatch({ type: "filter_projects", filters, requestFocus: true });
       return { ok: true, criteria: normalizedFilters(filters) };
     },
 
     openTimeline(filters: string[]) {
-      dispatch({ type: "open_timeline", filters });
+      dispatch({ type: "open_timeline", filters, requestFocus: true });
       return { ok: true, filters: normalizedFilters(filters) };
     },
 
     showContactSection() {
-      dispatch({ type: "navigate", sectionId: "contact" });
+      dispatch({
+        type: "navigate",
+        sectionId: "contact",
+        requestFocus: true,
+      });
       return { ok: true, section_id: "contact" as const };
     },
   };

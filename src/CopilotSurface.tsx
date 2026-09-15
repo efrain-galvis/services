@@ -56,7 +56,10 @@ function PortfolioTools({
     description:
       "Current portfolio UI state. Use it to understand what the visitor is viewing and which filters are active.",
     value: {
-      ...navigationState,
+      active_section: navigationState.active_section,
+      selected_project: navigationState.selected_project,
+      timeline_filter: navigationState.timeline_filter,
+      project_filters: navigationState.project_filters,
       available_section_ids: [...PORTFOLIO_SECTIONS],
       available_project_ids: PUBLISHED_PROJECTS.map(({ id }) => id),
     },
