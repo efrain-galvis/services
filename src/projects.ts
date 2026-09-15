@@ -1,3 +1,8 @@
+import {
+  adaptArchitectureDiagram,
+  type ArchitectureDiagramModel,
+} from "./architecture";
+
 export type ProjectConfidentiality =
   | "public"
   | "anonymized"
@@ -17,6 +22,7 @@ export type Project = {
   relatedSkills: string[];
   evidenceId?: string;
   developmentFixture?: boolean;
+  architectureGraph?: ArchitectureDiagramModel;
 };
 
 export type ProjectsThinState = {
@@ -69,6 +75,15 @@ export function adaptProject(value: unknown): Project | null {
   const problem = optionalText(value.problem);
   const role = optionalText(value.role);
   const architecture = optionalText(value.architecture);
+  const architectureGraphValue = read(
+    value,
+    "architectureGraph",
+    "architecture_graph",
+  );
+  const architectureGraph =
+    architectureGraphValue === undefined || architectureGraphValue === null
+      ? undefined
+      : adaptArchitectureDiagram(architectureGraphValue);
   const evidenceId = optionalText(read(value, "evidenceId", "evidence_id"));
   const confidentiality = optionalText(
     read(value, "confidentialityLevel", "confidentiality_level"),
@@ -115,6 +130,7 @@ export function adaptProject(value: unknown): Project | null {
     ...(problem ? { problem } : {}),
     ...(role ? { role } : {}),
     ...(architecture ? { architecture } : {}),
+    ...(architectureGraph ? { architectureGraph } : {}),
     ...(confidentiality
       ? { confidentialityLevel: confidentiality as ProjectConfidentiality }
       : {}),

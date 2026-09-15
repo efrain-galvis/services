@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import ProjectCard from "../src/ProjectCard";
-import ProjectGrid from "../src/ProjectGrid";
+import ProjectGrid, { loadDevelopmentFixture } from "../src/ProjectGrid";
 import {
   adaptProject,
   adaptProjects,
@@ -79,6 +79,19 @@ describe("project adapters", () => {
     ])).toEqual([project({ id: "valid", name: "Valid" })]);
     expect(adaptProjects({ projects: [] })).toEqual([]);
   });
+
+  it("keeps a valid project but omits its malformed optional graph", () => {
+    expect(adaptProject({
+      id: "valid-project",
+      name: "Valid project",
+      architecture_graph: {
+        id: "invalid-graph",
+        title: "Invalid graph",
+        nodes: [{ id: "source", label: "Source" }],
+        edges: [{ source: "source", target: "missing" }],
+      },
+    })).toEqual(project({ id: "valid-project", name: "Valid project" }));
+  });
 });
 
 describe("project publication and filtering", () => {
@@ -115,6 +128,17 @@ describe("project publication and filtering", () => {
 });
 
 describe("project UI safety states", () => {
+  it("turns a fixture import rejection into a retryable error result", async () => {
+    const result = await loadDevelopmentFixture(() =>
+      Promise.reject(new Error("chunk unavailable")),
+    );
+
+    expect(result).toEqual({
+      project: null,
+      error: "Development fixture could not load. Try again.",
+    });
+  });
+
   it("renders the evidence-cited thin state when no projects are published", () => {
     const html = renderToStaticMarkup(createElement(ProjectGrid));
 
@@ -155,7 +179,55 @@ describe("project UI safety states", () => {
 
     expect(html).toContain("Development fixture");
     expect(html).toContain("Layout QA only");
-    expect(html).toContain("disabled");
     expect(html).toContain("Explore architecture");
+  });
+
+  it("keeps unavailable Explore architecture focusable with an accessible explanation", () => {
+    const html = renderToStaticMarkup(createElement(ProjectCard, {
+      project: project(),
+    }));
+
+    expect(html).toContain("Explore architecture");
+    expect(html).toContain('aria-disabled="true"');
+    expect(html).not.toContain(' disabled=""');
+    expect(html).toContain(
+      "Unavailable until a published architecture graph is linked",
+    );
+  });
+
+  it("uses distinct helper copy for fixture and published architecture CTAs", () => {
+    const architectureGraph: Project["architectureGraph"] = {
+      id: "graph",
+      title: "Published graph",
+      nodes: [{ id: "node", label: "Node" }],
+      edges: [],
+      evidenceId: "project.graph",
+    };
+    const publishedHtml = renderToStaticMarkup(createElement(ProjectCard, {
+      project: project({
+        architectureGraph,
+      }),
+    }));
+    const fixtureHtml = renderToStaticMarkup(createElement(ProjectCard, {
+      project: {
+        ...PROJECT_CARD_DEVELOPMENT_FIXTURE,
+        architectureGraph: {
+          ...architectureGraph,
+          developmentFixture: true,
+        },
+      },
+    }));
+
+    expect(publishedHtml).toContain('aria-disabled="false"');
+    expect(publishedHtml).not.toContain(" disabled");
+    expect(publishedHtml).toContain(
+      "Open the published architecture nodes and flows.",
+    );
+    expect(fixtureHtml).toContain(
+      "Open the development fixture architecture nodes and flows.",
+    );
+    expect(fixtureHtml).not.toContain(
+      "Open the published architecture nodes and flows.",
+    );
   });
 });
