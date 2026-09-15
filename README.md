@@ -16,6 +16,18 @@ Baseline scores live in `src/playerProfile.ts`. They are conservative,
 directional editorial defaults based on the portfolio represented by this site,
 not independent credentials, and can be tuned as the source material evolves.
 
+## Project cards
+
+Open **View selected work** below LYRA's chat composer to render the ProjectGrid.
+The published collection is intentionally empty and cites
+`proj.public-cases.summary`: detailed public case studies are not yet available,
+so the UI does not infer project names, clients, outcomes, or metrics.
+
+In local development, choose **Load development fixture** to exercise a complete
+ProjectCard layout. The fixture is visibly labeled, is not production content,
+and is never included in the published collection. Fuller project cards wait on
+Efrain knowledge updates. The architecture CTA remains disabled until FR-014.
+
 ## Local development
 
 Requires Node.js 22.x, matching the Vercel Runtime and `package.json`.
