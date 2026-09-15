@@ -37,13 +37,18 @@ function read(record: UnknownRecord, camelCase: string, snakeCase: string) {
   return record[camelCase] ?? record[snakeCase];
 }
 
-function requiredText(value: unknown): string | null {
-  return typeof value === "string" && value.trim() ? value.trim() : null;
+function requiredText(value: unknown, maxLength = 160): string | null {
+  if (typeof value !== "string") return null;
+  const text = value.trim();
+  return text && text.length <= maxLength ? text : null;
 }
 
-function optionalText(value: unknown): string | null | undefined {
+function optionalText(
+  value: unknown,
+  maxLength = 160,
+): string | null | undefined {
   if (value === undefined || value === null) return undefined;
-  return requiredText(value);
+  return requiredText(value, maxLength);
 }
 
 function adaptNode(value: unknown): ArchitectureNode | null {
@@ -83,7 +88,7 @@ export function adaptArchitectureDiagram(
 
   const id = requiredText(value.id);
   const title = requiredText(value.title);
-  const description = optionalText(value.description);
+  const description = optionalText(value.description, 500);
   const evidenceId = optionalText(read(value, "evidenceId", "evidence_id"));
   const nodes = value.nodes.map(adaptNode);
   const edges = value.edges.map(adaptEdge);
@@ -101,6 +106,7 @@ export function adaptArchitectureDiagram(
 
   const safeNodes = nodes as ArchitectureNode[];
   const safeEdges = edges as ArchitectureEdge[];
+  if (safeNodes.length > 24 || safeEdges.length > 48) return null;
   const nodeIds = new Set(safeNodes.map((node) => node.id));
   const edgeIds = new Set(safeEdges.map((edge) => edge.id));
   if (

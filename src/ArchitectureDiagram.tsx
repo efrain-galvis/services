@@ -126,7 +126,7 @@ export default function ArchitectureDiagram({
               refY="4"
               orient="auto"
             >
-              <path d="M0,0 L8,4 L0,8 Z" />
+              <path className="arch-arrow" d="M0,0 L8,4 L0,8 Z" />
             </marker>
           </defs>
           <g className="arch-edges">
