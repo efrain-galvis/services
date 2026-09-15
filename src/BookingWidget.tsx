@@ -244,8 +244,10 @@ export default function BookingWidget({
     <div className="booking-picker">
       <div className="availability-heading">
         <div>
-          <p className="booking-step">Available next week</p>
-          <h3>Choose a 30-minute time.</h3>
+          <p className="booking-step">Weekday consultation times</p>
+          <h3>
+            Choose a 30-minute time from 8–9 am or 4–6 pm America/Bogota.
+          </h3>
         </div>
         <span>Times shown in {timezone}</span>
       </div>
