@@ -2,8 +2,11 @@ import { FormEvent, useCallback, useRef, useState } from "react";
 import {
   CopilotKitProvider,
   type CopilotKitProviderProps,
+  useAgentContext,
+  useFrontendTool,
 } from "@copilotkit/react-core/v2";
 import { useAgent } from "@copilotkit/react-core/v2/headless";
+import { z } from "zod";
 import {
   CHAT_LIMIT_NOTE,
   CHAT_MAX_TURNS,
@@ -11,11 +14,27 @@ import {
   readChatSession,
   writeChatTurns,
 } from "./chatLimits";
+import {
+  PORTFOLIO_SECTIONS,
+  type PortfolioNavigationState,
+} from "./portfolioNavigation";
+import { PUBLISHED_PROJECTS } from "./projects";
+
+type PortfolioActions = {
+  navigateToSection: (sectionId: string) => unknown;
+  highlightSection: (sectionId: string) => unknown;
+  openProject: (projectId: string) => unknown;
+  filterProjects: (filters: string[]) => unknown;
+  openTimeline: (filters: string[]) => unknown;
+  showContactSection: () => unknown;
+};
 
 type Props = {
   runtimeUrl: string;
   agentId: string;
   starters: string[];
+  navigationState: PortfolioNavigationState;
+  portfolioActions: PortfolioActions;
   onConnectionFailure: (draft?: string) => void;
 };
 
@@ -27,6 +46,100 @@ const CONNECTION_FAILURE_CODES = new Set([
   "runtime_info_fetch_failed",
   "agent_connect_failed",
 ]);
+
+function PortfolioTools({
+  agentId,
+  navigationState,
+  portfolioActions,
+}: Pick<Props, "agentId" | "navigationState" | "portfolioActions">) {
+  useAgentContext({
+    description:
+      "Current portfolio UI state. Use it to understand what the visitor is viewing and which filters are active.",
+    value: {
+      ...navigationState,
+      available_section_ids: [...PORTFOLIO_SECTIONS],
+      available_project_ids: PUBLISHED_PROJECTS.map(({ id }) => id),
+    },
+  });
+
+  useFrontendTool(
+    {
+      name: "navigate_to_section",
+      description:
+        "Scroll to and focus a portfolio section. Use one of the available section IDs from context.",
+      agentId,
+      parameters: z.object({ section_id: z.string() }),
+      handler: async ({ section_id }) =>
+        portfolioActions.navigateToSection(section_id),
+    },
+    [agentId, portfolioActions],
+  );
+
+  useFrontendTool(
+    {
+      name: "highlight_section",
+      description:
+        "Scroll to a portfolio section and temporarily emphasize it without generating new UI.",
+      agentId,
+      parameters: z.object({ section_id: z.string() }),
+      handler: async ({ section_id }) =>
+        portfolioActions.highlightSection(section_id),
+    },
+    [agentId, portfolioActions],
+  );
+
+  useFrontendTool(
+    {
+      name: "open_project",
+      description:
+        "Open and select a published project by ID. If it is unavailable, show the grounded Selected Work thin state.",
+      agentId,
+      parameters: z.object({ project_id: z.string() }),
+      handler: async ({ project_id }) =>
+        portfolioActions.openProject(project_id),
+    },
+    [agentId, portfolioActions],
+  );
+
+  useFrontendTool(
+    {
+      name: "filter_projects",
+      description:
+        "Open Selected Work and filter projects by exact published skill or technology labels. Pass an empty list to clear filters.",
+      agentId,
+      parameters: z.object({ criteria: z.array(z.string()) }),
+      handler: async ({ criteria }) =>
+        portfolioActions.filterProjects(criteria),
+    },
+    [agentId, portfolioActions],
+  );
+
+  useFrontendTool(
+    {
+      name: "open_timeline",
+      description:
+        "Open the career timeline with filter IDs from its published filter list. Pass an empty list to show all milestones.",
+      agentId,
+      parameters: z.object({ filters: z.array(z.string()) }),
+      handler: async ({ filters }) => portfolioActions.openTimeline(filters),
+    },
+    [agentId, portfolioActions],
+  );
+
+  useFrontendTool(
+    {
+      name: "show_contact_section",
+      description:
+        "Scroll to and focus the private contact form. Do not ask for personal information in chat.",
+      agentId,
+      parameters: z.object({}),
+      handler: async () => portfolioActions.showContactSection(),
+    },
+    [agentId, portfolioActions],
+  );
+
+  return null;
+}
 
 function messageText(content: unknown): string {
   if (typeof content === "string") return content;
@@ -172,6 +285,11 @@ export default function CopilotSurface(props: Props) {
       agentId={props.agentId}
       onError={handleProviderError}
     >
+      <PortfolioTools
+        agentId={props.agentId}
+        navigationState={props.navigationState}
+        portfolioActions={props.portfolioActions}
+      />
       <Chat
         agentId={props.agentId}
         starters={props.starters}
