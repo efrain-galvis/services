@@ -1,6 +1,5 @@
 import {
   FormEvent,
-  useCallback,
   useEffect,
   useMemo,
   useReducer,
@@ -63,40 +62,45 @@ export default function BookingWidget({
   onStatusChange,
   dispatchActivity,
 }: Props) {
-  const [flow, dispatch] = useReducer(bookingFlowReducer, INITIAL_BOOKING_FLOW);
+  const [flow, dispatch] = useReducer(bookingFlowReducer, {
+    ...INITIAL_BOOKING_FLOW,
+    status: "picking",
+  });
   const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [availability, setAvailability] = useState<
     "loading" | "available" | "unavailable"
   >("loading");
+  const [availabilityAttempt, setAvailabilityAttempt] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const loadAvailability = useCallback(async () => {
-    setAvailability("loading");
-    setSlots([]);
-    dispatch({ type: "start_picking" });
+  useEffect(() => {
+    let cancelled = false;
     const activityId = mintMessageId();
     dispatchActivity({
       type: "start",
       id: activityId,
       label: "Checking Efrain’s availability…",
     });
-    try {
-      const nextSlots = await client.getAvailability(timezone);
-      setSlots(nextSlots);
-      setAvailability(nextSlots.length ? "available" : "unavailable");
-      dispatchActivity({
-        type: nextSlots.length ? "succeed" : "fail",
-        id: activityId,
+    void client
+      .getAvailability(timezone)
+      .then((nextSlots) => {
+        if (cancelled) return;
+        setSlots(nextSlots);
+        setAvailability(nextSlots.length ? "available" : "unavailable");
+        dispatchActivity({
+          type: nextSlots.length ? "succeed" : "fail",
+          id: activityId,
+        });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setAvailability("unavailable");
+        dispatchActivity({ type: "fail", id: activityId });
       });
-    } catch {
-      setAvailability("unavailable");
-      dispatchActivity({ type: "fail", id: activityId });
-    }
-  }, [client, dispatchActivity, timezone]);
-
-  useEffect(() => {
-    void loadAvailability();
-  }, [loadAvailability]);
+    return () => {
+      cancelled = true;
+    };
+  }, [availabilityAttempt, client, dispatchActivity, timezone]);
 
   useEffect(() => {
     onStatusChange(flow.status);
@@ -116,6 +120,13 @@ export default function BookingWidget({
     () => groupSlots(slots, timezone),
     [slots, timezone],
   );
+
+  function retryAvailability() {
+    setAvailability("loading");
+    setSlots([]);
+    dispatch({ type: "start_picking" });
+    setAvailabilityAttempt((attempt) => attempt + 1);
+  }
 
   function review(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -247,7 +258,7 @@ export default function BookingWidget({
       {availability === "unavailable" && (
         <div className="availability-state" role="status" aria-live="polite">
           <p>No verified times are available right now. No placeholder slots are shown.</p>
-          <button type="button" className="secondary" onClick={() => void loadAvailability()}>
+          <button type="button" className="secondary" onClick={retryAvailability}>
             Check again
           </button>
         </div>
