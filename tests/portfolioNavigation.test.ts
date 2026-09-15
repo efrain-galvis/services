@@ -55,8 +55,8 @@ describe("portfolio navigation reducer", () => {
       },
       { type: "set_visitor_timezone", timezone: " America/New_York " },
       { type: "set_conversation_id", conversationId: " conversation-123 " },
-      { type: "set_booking_state", status: "submitting" },
-      { type: "set_booking_state", status: "submitted" },
+      { type: "set_booking_state", status: "booking" },
+      { type: "set_booking_state", status: "confirmed" },
     ];
     const result = actions.reduce(
       portfolioNavigationReducer,
@@ -68,7 +68,7 @@ describe("portfolio navigation reducer", () => {
       job_fit_assessment: FIT_ASSESSMENT_FIXTURE,
       visitor_timezone: "America/New_York",
       conversation_id: "conversation-123",
-      booking_state: { status: "submitted" },
+      booking_state: { status: "confirmed" },
     });
   });
 
@@ -100,12 +100,19 @@ describe("portfolio frontend action handlers", () => {
       ok: true,
       section_id: "contact",
     });
+    expect(actions.startBooking()).toEqual({
+      ok: true,
+      section_id: "contact",
+      booking_state: "picking",
+    });
     expect(dispatch.mock.calls.map(([action]) => action)).toEqual([
       {
         type: "navigate",
         sectionId: "career-timeline",
         requestFocus: true,
       },
+      { type: "navigate", sectionId: "contact", requestFocus: true },
+      { type: "set_booking_state", status: "picking" },
       { type: "navigate", sectionId: "contact", requestFocus: true },
     ]);
   });

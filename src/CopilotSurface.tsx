@@ -31,6 +31,7 @@ type PortfolioActions = {
   setVisitorIntent: (intent: string) => unknown;
   showJobFitAssessment: (assessment: unknown) => unknown;
   showContactSection: () => unknown;
+  startBooking: () => unknown;
 };
 
 type Props = {
@@ -240,14 +241,29 @@ function PortfolioTools({
 
   useFrontendTool(
     {
-      name: "show_contact_section",
+      name: "show_availability",
       description:
-        "Scroll to and focus the private contact form. Do not ask for personal information in chat.",
+        "Open the verified availability picker. Never invent slots or ask for personal information in chat.",
       agentId,
       parameters: z.object({}),
       handler: async () =>
         runVisibleActivity(dispatchActivity, "Checking Efrain’s availability…", () =>
           portfolioActions.showContactSection(),
+        ),
+    },
+    [agentId, portfolioActions],
+  );
+
+  useFrontendTool(
+    {
+      name: "start_booking",
+      description:
+        "Open the private booking flow and set its shared state to picking. The visitor enters all personal information directly in the UI.",
+      agentId,
+      parameters: z.object({}),
+      handler: async () =>
+        runVisibleActivity(dispatchActivity, "Checking Efrain’s availability…", () =>
+          portfolioActions.startBooking(),
         ),
     },
     [agentId, portfolioActions],
