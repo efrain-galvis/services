@@ -153,9 +153,13 @@ describe("portfolio frontend action handlers", () => {
       ok: true,
       role_title: FIT_ASSESSMENT_FIXTURE.role_title,
     });
-    expect(dispatch).toHaveBeenCalledWith({
-      type: "set_job_fit_assessment",
-      assessment: FIT_ASSESSMENT_FIXTURE,
+    const finalState = dispatch.mock.calls
+      .map(([action]) => action)
+      .reduce(portfolioNavigationReducer, INITIAL_PORTFOLIO_STATE);
+    expect(finalState).toMatchObject({
+      active_section: "role-fit",
+      job_fit_assessment: FIT_ASSESSMENT_FIXTURE,
+      visitor_intent: "review_job_fit_assessment",
     });
   });
 });

@@ -284,12 +284,12 @@ export function createPortfolioActionHandlers(
           message: "The job fit assessment did not match the published schema.",
         };
       }
-      dispatch({ type: "set_job_fit_assessment", assessment });
       dispatch({
         type: "navigate",
         sectionId: "role-fit",
         requestFocus: true,
       });
+      dispatch({ type: "set_job_fit_assessment", assessment });
       return {
         ok: true,
         role_title: assessment.role_title,
