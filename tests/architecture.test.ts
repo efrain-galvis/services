@@ -107,4 +107,23 @@ describe("ArchitectureDiagram", () => {
     expect(html).toContain("node.input");
     expect(html).toContain("project.graph");
   });
+
+  it("wraps and truncates long SVG labels while preserving the full list label", () => {
+    const longLabel =
+      "A deliberately long architecture node label that cannot fit in one box";
+    const html = renderToStaticMarkup(
+      createElement(ArchitectureDiagram, {
+        diagram: {
+          ...diagram,
+          nodes: [{ id: "long", label: longLabel }],
+          edges: [],
+        },
+      }),
+    );
+
+    expect(html).toContain("<tspan");
+    expect(html).toContain('textLength="166"');
+    expect(html).toContain("…</tspan>");
+    expect(html).toContain(`<strong>${longLabel}</strong>`);
+  });
 });

@@ -15,7 +15,31 @@ type Point = { x: number; y: number };
 
 const VIEWBOX_WIDTH = 900;
 const NODE_WIDTH = 190;
-const NODE_HEIGHT = 68;
+const NODE_HEIGHT = 82;
+const NODE_LABEL_LINE_LENGTH = 16;
+const NODE_TEXT_WIDTH = NODE_WIDTH - 24;
+
+function wrapNodeLabel(label: string): string[] {
+  const characters = Array.from(label.trim());
+  if (characters.length <= NODE_LABEL_LINE_LENGTH) return [characters.join("")];
+
+  let splitAt = -1;
+  for (let index = 0; index < NODE_LABEL_LINE_LENGTH; index += 1) {
+    if (/\s/.test(characters[index])) splitAt = index;
+  }
+  if (splitAt < NODE_LABEL_LINE_LENGTH / 2) splitAt = NODE_LABEL_LINE_LENGTH;
+
+  const firstLine = characters.slice(0, splitAt).join("").trimEnd();
+  const remainder = characters.slice(
+    splitAt < NODE_LABEL_LINE_LENGTH ? splitAt + 1 : splitAt,
+  );
+  const secondLine =
+    remainder.length > NODE_LABEL_LINE_LENGTH
+      ? `${remainder.slice(0, NODE_LABEL_LINE_LENGTH - 1).join("").trimEnd()}…`
+      : remainder.join("").trim();
+
+  return [firstLine, secondLine];
+}
 
 function layoutNodes(diagram: ArchitectureDiagramModel) {
   const columns = Math.min(3, diagram.nodes.length);
@@ -159,6 +183,7 @@ export default function ArchitectureDiagram({
           <g className="arch-nodes">
             {diagram.nodes.map((node, index) => {
               const point = positions.get(node.id)!;
+              const labelLines = wrapNodeLabel(node.label);
               return (
                 <g key={node.id}>
                   <rect
@@ -168,10 +193,26 @@ export default function ArchitectureDiagram({
                     height={NODE_HEIGHT}
                     rx="10"
                   />
-                  <text x={point.x} y={point.y - 5}>
-                    {node.label}
+                  <text
+                    className="arch-node-label"
+                    x={point.x}
+                    y={point.y - (labelLines.length > 1 ? 13 : 6)}
+                  >
+                    {labelLines.map((line, lineIndex) => (
+                      <tspan
+                        x={point.x}
+                        dy={lineIndex === 0 ? 0 : 18}
+                        key={`${node.id}-line-${lineIndex}`}
+                        lengthAdjust="spacingAndGlyphs"
+                        textLength={
+                          line.length > 12 ? NODE_TEXT_WIDTH : undefined
+                        }
+                      >
+                        {line}
+                      </tspan>
+                    ))}
                   </text>
-                  <text className="arch-node-index" x={point.x} y={point.y + 16}>
+                  <text className="arch-node-index" x={point.x} y={point.y + 29}>
                     Node {String(index + 1).padStart(2, "0")}
                   </text>
                 </g>

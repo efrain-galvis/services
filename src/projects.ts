@@ -106,7 +106,6 @@ export function adaptProject(value: unknown): Project | null {
     problem === null ||
     role === null ||
     architecture === null ||
-    architectureGraph === null ||
     evidenceId === null ||
     confidentiality === null ||
     technologies === null ||

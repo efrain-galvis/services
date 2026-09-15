@@ -79,6 +79,19 @@ describe("project adapters", () => {
     ])).toEqual([project({ id: "valid", name: "Valid" })]);
     expect(adaptProjects({ projects: [] })).toEqual([]);
   });
+
+  it("keeps a valid project but omits its malformed optional graph", () => {
+    expect(adaptProject({
+      id: "valid-project",
+      name: "Valid project",
+      architecture_graph: {
+        id: "invalid-graph",
+        title: "Invalid graph",
+        nodes: [{ id: "source", label: "Source" }],
+        edges: [{ source: "source", target: "missing" }],
+      },
+    })).toEqual(project({ id: "valid-project", name: "Valid project" }));
+  });
 });
 
 describe("project publication and filtering", () => {

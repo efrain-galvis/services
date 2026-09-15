@@ -36,8 +36,8 @@ and explains that published evidence is required. The production collection has
 no architecture graphs today, so normal project entry points remain gated.
 ArchitectureDiagram itself also has an evidence-cited thin state for direct
 renders without graph data rather than inventing client systems. If a supplied
-graph is invalid, the project adapter rejects the whole project instead of
-partially presenting unverified architecture.
+graph is invalid, the project adapter omits that optional graph, keeps the valid
+project card, and leaves its architecture CTA disabled.
 
 For layout QA, run the local dev server, open **View selected work**, choose
 **Load development fixture**, then **Explore architecture**. The fixture graph
