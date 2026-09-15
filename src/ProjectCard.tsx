@@ -4,6 +4,8 @@ import type { Project } from "./projects";
 export type ProjectCardProps = {
   project: Project;
   index?: number;
+  selected?: boolean;
+  onSelect?: (project: Project) => void;
   onExploreArchitecture?: (project: Project) => void;
 };
 
@@ -29,6 +31,8 @@ function DetailList({
 export default function ProjectCard({
   project,
   index = 0,
+  selected = false,
+  onSelect,
   onExploreArchitecture,
 }: ProjectCardProps) {
   const titleId = useId();
@@ -81,7 +85,12 @@ export default function ProjectCard({
     : "Unavailable until a published architecture graph is linked to this project.";
 
   return (
-    <section className="project-card" aria-labelledby={titleId}>
+    <section
+      className={`project-card${selected ? " selected" : ""}`}
+      id={`project-${project.id}`}
+      tabIndex={-1}
+      aria-labelledby={titleId}
+    >
       <header className="project-card-header">
         <div>
           <p className="project-kicker">
@@ -171,16 +180,30 @@ export default function ProjectCard({
             ? <>Evidence / <span>{project.evidenceId}</span></>
             : "No public evidence ID supplied"}
         </p>
-        <button
-          type="button"
-          aria-disabled={!project.architectureGraph}
-          aria-describedby={architectureDescriptionId}
-          onClick={() => {
-            if (project.architectureGraph) onExploreArchitecture?.(project);
-          }}
-        >
-          Explore architecture <span aria-hidden="true">↗</span>
-        </button>
+        <div className="project-card-actions">
+          {onSelect && (
+            <button
+              type="button"
+              aria-pressed={selected}
+              onClick={() => onSelect(project)}
+            >
+              {selected ? "Selected" : "Select project"}
+            </button>
+          )}
+          <button
+            type="button"
+            aria-disabled={!project.architectureGraph}
+            aria-describedby={architectureDescriptionId}
+            onClick={() => {
+              if (project.architectureGraph) {
+                onSelect?.(project);
+                onExploreArchitecture?.(project);
+              }
+            }}
+          >
+            Explore architecture <span aria-hidden="true">↗</span>
+          </button>
+        </div>
       </footer>
       <p className="project-architecture-description" id={architectureDescriptionId}>
         {architectureDescription}

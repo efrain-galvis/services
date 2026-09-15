@@ -16,6 +16,10 @@ export type ProjectGridProps = {
   projects?: Project[];
   thinState?: ProjectsThinState;
   showDevelopmentFixture?: boolean;
+  filters?: string[];
+  selectedProjectId?: string | null;
+  onFiltersChange?: (filters: string[]) => void;
+  onProjectSelect?: (projectId: string) => void;
   onClose?: () => void;
 };
 
@@ -46,12 +50,15 @@ export default function ProjectGrid({
   projects = PUBLISHED_PROJECTS,
   thinState = PROJECTS_THIN_STATE,
   showDevelopmentFixture = false,
+  filters = [],
+  selectedProjectId = null,
+  onFiltersChange,
+  onProjectSelect,
   onClose,
 }: ProjectGridProps) {
   const titleId = useId();
   const statusId = useId();
   const fixtureErrorId = useId();
-  const [filters, setFilters] = useState<string[]>([]);
   const [fixtureProject, setFixtureProject] = useState<Project | null>(null);
   const [fixtureBusy, setFixtureBusy] = useState(false);
   const [fixtureError, setFixtureError] = useState("");
@@ -65,10 +72,10 @@ export default function ProjectGrid({
   const visibleProjects = filterProjects(sourceProjects, filters);
 
   function toggleFilter(filter: string) {
-    setFilters((current) =>
-      current.includes(filter)
-        ? current.filter((value) => value !== filter)
-        : [...current, filter],
+    onFiltersChange?.(
+      filters.includes(filter)
+        ? filters.filter((value) => value !== filter)
+        : [...filters, filter],
     );
   }
 
@@ -132,7 +139,7 @@ export default function ProjectGrid({
               type="button"
               className={filters.length === 0 ? "active" : ""}
               aria-pressed={filters.length === 0}
-              onClick={() => setFilters([])}
+              onClick={() => onFiltersChange?.([])}
             >
               All
             </button>
@@ -190,6 +197,10 @@ export default function ProjectGrid({
               project={project}
               index={index}
               key={project.id}
+              selected={selectedProjectId === project.id}
+              onSelect={(selectedProject) =>
+                onProjectSelect?.(selectedProject.id)
+              }
               onExploreArchitecture={(selectedProject) => {
                 if (selectedProject.architectureGraph) {
                   setActiveArchitecture(selectedProject.architectureGraph);

@@ -6,6 +6,9 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useMemo,
+  useReducer,
+  useRef,
   useState,
 } from "react";
 import {
@@ -20,6 +23,15 @@ import CareerTimeline from "./CareerTimeline";
 import FitDashboard from "./FitDashboard";
 import PlayerCard from "./PlayerCard";
 import ProjectGrid from "./ProjectGrid";
+import { PUBLISHED_PROJECTS } from "./projects";
+import {
+  createPortfolioActionHandlers,
+  INITIAL_PORTFOLIO_STATE,
+  type PortfolioNavigationAction,
+  type PortfolioNavigationState,
+  type PortfolioSectionId,
+  portfolioNavigationReducer,
+} from "./portfolioNavigation";
 import {
   adaptFitAssessment,
   FIT_ASSESSMENT_FIXTURE,
@@ -350,22 +362,58 @@ function FitAssessmentPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
-function LyraHero() {
+type LyraHeroProps = {
+  navigationState: PortfolioNavigationState;
+  dispatchNavigation: (action: PortfolioNavigationAction) => void;
+};
+
+function LyraHero({
+  navigationState,
+  dispatchNavigation,
+}: LyraHeroProps) {
   const starters = useStarters();
   const [runtimeFailed, setRuntimeFailed] = useState(false);
   const [fallbackDraft, setFallbackDraft] = useState("");
-  const [activePanel, setActivePanel] = useState<
-    "fit" | "player" | "projects" | "timeline" | null
-  >(null);
-  const [timelineFilters, setTimelineFilters] = useState<string[]>([]);
   const handleRuntimeFailure = useCallback((draft = "") => {
     setFallbackDraft(draft);
     setRuntimeFailed(true);
   }, []);
   const useCopilot = Boolean(RUNTIME_URL) && !runtimeFailed;
+  const availableProjectIds = useMemo(
+    () => PUBLISHED_PROJECTS.map(({ id }) => id),
+    [],
+  );
+  const actions = useMemo(
+    () => createPortfolioActionHandlers(dispatchNavigation, availableProjectIds),
+    [availableProjectIds, dispatchNavigation],
+  );
+  const activePanel = (
+    {
+      "selected-work": "projects",
+      "career-timeline": "timeline",
+      "player-profile": "player",
+      "role-fit": "fit",
+    } as const
+  )[navigationState.active_section as keyof {
+    "selected-work": "projects";
+    "career-timeline": "timeline";
+    "player-profile": "player";
+    "role-fit": "fit";
+  }] ?? null;
+  const closePanel = () =>
+    dispatchNavigation({ type: "navigate", sectionId: "lyra" });
 
   return (
-    <section className="lyra-shell" id="lyra" aria-labelledby="lyra-title">
+    <section
+      className={`lyra-shell${
+        navigationState.highlighted_section === "lyra"
+          ? " portfolio-highlight"
+          : ""
+      }`}
+      id="lyra"
+      tabIndex={-1}
+      aria-labelledby="lyra-title"
+    >
       <div className="lyra-bar">
         <div>
           <span className="status-dot" aria-hidden="true" />
@@ -383,23 +431,77 @@ function LyraHero() {
       </div>
       <div className="chat-frame">
         {activePanel === "fit" && (
-          <FitAssessmentPanel onClose={() => setActivePanel(null)} />
+          <div
+            className={`portfolio-panel${
+              navigationState.highlighted_section === "role-fit"
+                ? " portfolio-highlight"
+                : ""
+            }`}
+            id="role-fit"
+            tabIndex={-1}
+            aria-label="Role fit assessment"
+          >
+            <FitAssessmentPanel onClose={closePanel} />
+          </div>
         )}
         {activePanel === "player" && (
-          <PlayerCard onClose={() => setActivePanel(null)} />
+          <div
+            className={`portfolio-panel${
+              navigationState.highlighted_section === "player-profile"
+                ? " portfolio-highlight"
+                : ""
+            }`}
+            id="player-profile"
+            tabIndex={-1}
+            aria-label="Skill profile"
+          >
+            <PlayerCard onClose={closePanel} />
+          </div>
         )}
         {activePanel === "timeline" && (
-          <CareerTimeline
-            filters={timelineFilters}
-            onFiltersChange={setTimelineFilters}
-            onClose={() => setActivePanel(null)}
-          />
+          <div
+            className={`portfolio-panel${
+              navigationState.highlighted_section === "career-timeline"
+                ? " portfolio-highlight"
+                : ""
+            }`}
+            id="career-timeline"
+            tabIndex={-1}
+            aria-label="Career timeline"
+          >
+            <CareerTimeline
+              filters={navigationState.timeline_filter}
+              onFiltersChange={(filters) =>
+                dispatchNavigation({ type: "open_timeline", filters })
+              }
+              onClose={closePanel}
+            />
+          </div>
         )}
         {activePanel === "projects" && (
-          <ProjectGrid
-            showDevelopmentFixture={SHOW_PROJECT_FIXTURE}
-            onClose={() => setActivePanel(null)}
-          />
+          <div
+            className={`portfolio-panel${
+              navigationState.highlighted_section === "selected-work"
+                ? " portfolio-highlight"
+                : ""
+            }`}
+            id="selected-work"
+            tabIndex={-1}
+            aria-label="Selected work"
+          >
+            <ProjectGrid
+              filters={navigationState.project_filters}
+              selectedProjectId={navigationState.selected_project}
+              showDevelopmentFixture={SHOW_PROJECT_FIXTURE}
+              onFiltersChange={(filters) =>
+                dispatchNavigation({ type: "filter_projects", filters })
+              }
+              onProjectSelect={(projectId) =>
+                dispatchNavigation({ type: "open_project", projectId })
+              }
+              onClose={closePanel}
+            />
+          </div>
         )}
         <div className="chat-surface" hidden={activePanel !== null}>
           {useCopilot ? (
@@ -409,6 +511,8 @@ function LyraHero() {
                   runtimeUrl={RUNTIME_URL}
                   agentId={AGENT_ID}
                   starters={starters}
+                  navigationState={navigationState}
+                  portfolioActions={actions}
                   onConnectionFailure={handleRuntimeFailure}
                 />
               </Suspense>
@@ -419,16 +523,28 @@ function LyraHero() {
           <div className="fit-entry">
             <span>Explore the professional profile</span>
             <div>
-              <button type="button" onClick={() => setActivePanel("projects")}>
+              <button
+                type="button"
+                onClick={() => actions.navigateToSection("selected-work")}
+              >
                 View selected work <span aria-hidden="true">↗</span>
               </button>
-              <button type="button" onClick={() => setActivePanel("timeline")}>
+              <button
+                type="button"
+                onClick={() => actions.navigateToSection("career-timeline")}
+              >
                 View career timeline <span aria-hidden="true">↗</span>
               </button>
-              <button type="button" onClick={() => setActivePanel("player")}>
+              <button
+                type="button"
+                onClick={() => actions.navigateToSection("player-profile")}
+              >
                 View skill profile <span aria-hidden="true">↗</span>
               </button>
-              <button type="button" onClick={() => setActivePanel("fit")}>
+              <button
+                type="button"
+                onClick={() => actions.navigateToSection("role-fit")}
+              >
                 Assess role fit <span aria-hidden="true">↗</span>
               </button>
             </div>
@@ -440,7 +556,7 @@ function LyraHero() {
   );
 }
 
-function Booking() {
+function Booking({ highlighted = false }: { highlighted?: boolean }) {
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -466,7 +582,12 @@ function Booking() {
     }
   }
   return (
-    <section className="booking" id="book" aria-labelledby="book-title">
+    <section
+      className={`booking${highlighted ? " portfolio-highlight" : ""}`}
+      id="book"
+      tabIndex={-1}
+      aria-labelledby="book-title"
+    >
       <div>
         <p className="eyebrow">Book / private channel</p>
         <h2 id="book-title">Ready to put a real problem on the table?</h2>
@@ -484,19 +605,107 @@ function Booking() {
 }
 
 export default function App() {
+  const [navigationState, dispatchNavigation] = useReducer(
+    portfolioNavigationReducer,
+    INITIAL_PORTFOLIO_STATE,
+  );
+  const handledNavigationRequest = useRef(0);
+
+  useEffect(() => {
+    if (
+      navigationState.navigation_request === 0 ||
+      handledNavigationRequest.current === navigationState.navigation_request
+    ) {
+      return;
+    }
+    const targetId =
+      navigationState.selected_project &&
+      navigationState.active_section === "selected-work"
+        ? `project-${navigationState.selected_project}`
+        : navigationState.active_section === "contact"
+        ? "book"
+        : navigationState.active_section;
+    const frame = window.requestAnimationFrame(() => {
+      handledNavigationRequest.current = navigationState.navigation_request;
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      target.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
+      target.focus({ preventScroll: true });
+    });
+
+    let highlightTimeout: number | undefined;
+    if (navigationState.highlighted_section) {
+      highlightTimeout = window.setTimeout(
+        () => dispatchNavigation({ type: "clear_highlight" }),
+        3000,
+      );
+    }
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      if (highlightTimeout) window.clearTimeout(highlightTimeout);
+    };
+  }, [
+    navigationState.active_section,
+    navigationState.highlighted_section,
+    navigationState.navigation_request,
+    navigationState.selected_project,
+  ]);
+
+  const navigateFromLink = (
+    event: React.MouseEvent<HTMLAnchorElement>,
+    sectionId: PortfolioSectionId,
+  ) => {
+    event.preventDefault();
+    dispatchNavigation({ type: "navigate", sectionId, requestFocus: true });
+  };
+
   return (
     <>
       <header className="site-header">
-        <a className="wordmark" href="#lyra">E. Galvis / AI systems</a>
+        <a
+          className="wordmark"
+          href="#lyra"
+          onClick={(event) => navigateFromLink(event, "lyra")}
+        >
+          E. Galvis / AI systems
+        </a>
         <nav aria-label="Primary">
-          <a href="#work">Work</a>
-          <a href="#book">Book</a>
+          <a
+            href="#work"
+            onClick={(event) => navigateFromLink(event, "work")}
+          >
+            Work
+          </a>
+          <a
+            href="#book"
+            onClick={(event) => navigateFromLink(event, "contact")}
+          >
+            Book
+          </a>
           <a href="https://github.com/efrain-galvis" target="_blank" rel="noreferrer">GitHub</a>
         </nav>
       </header>
       <main>
-        <LyraHero />
-        <section className="work" id="work" aria-labelledby="work-title">
+        <LyraHero
+          navigationState={navigationState}
+          dispatchNavigation={dispatchNavigation}
+        />
+        <section
+          className={`work${
+            navigationState.highlighted_section === "work"
+              ? " portfolio-highlight"
+              : ""
+          }`}
+          id="work"
+          tabIndex={-1}
+          aria-labelledby="work-title"
+        >
           <div className="section-heading">
             <p className="eyebrow">The portfolio around LYRA</p>
             <h2 id="work-title">AI that earns its place in production.</h2>
@@ -507,7 +716,9 @@ export default function App() {
             <article><span>03</span><h3>Production reviews</h3><p>Focused reviews of architecture, guardrails, cost, failure modes, and what not to build.</p></article>
           </div>
         </section>
-        <Booking />
+        <Booking
+          highlighted={navigationState.highlighted_section === "contact"}
+        />
       </main>
       <footer>
         <span>© 2026 Efrain Galvis · Working remotely</span>
