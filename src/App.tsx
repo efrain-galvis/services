@@ -14,10 +14,15 @@ import {
 import {
   CHAT_LIMIT_NOTE,
   CHAT_MAX_TURNS,
+  mintMessageId,
   readChatSession,
   writeChatSessionId,
   writeChatTurns,
 } from "./chatLimits";
+import AgentActivity, {
+  agentActivityReducer,
+  type AgentActivityAction,
+} from "./AgentActivity";
 import { DEFAULT_SITE_AGENT_URL } from "./config";
 import CareerTimeline from "./CareerTimeline";
 import FitDashboard from "./FitDashboard";
@@ -166,9 +171,13 @@ function StarterList({
 function FallbackChat({
   starters,
   initialDraft = "",
+  dispatchSharedState,
+  dispatchActivity,
 }: {
   starters: string[];
   initialDraft?: string;
+  dispatchSharedState: (action: PortfolioNavigationAction) => void;
+  dispatchActivity: (action: AgentActivityAction) => void;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -183,6 +192,13 @@ function FallbackChat({
   const [turns, setTurns] = useState(initialSession.turns);
   const spent = turns >= CHAT_MAX_TURNS;
 
+  useEffect(() => {
+    dispatchSharedState({
+      type: "set_conversation_id",
+      conversationId: initialSession.sessionId,
+    });
+  }, [dispatchSharedState, initialSession.sessionId]);
+
   async function send(text: string) {
     const prompt = text.trim().slice(0, 2000);
     if (!prompt || busy || spent) return;
@@ -192,6 +208,16 @@ function FallbackChat({
     setMessages((current) => [...current, { role: "user", text: prompt }]);
     setInput("");
     setBusy(true);
+    dispatchSharedState({
+      type: "set_visitor_intent",
+      intent: "talk_with_lyra",
+    });
+    const activityId = mintMessageId();
+    dispatchActivity({
+      type: "start",
+      id: activityId,
+      label: "Reviewing your request…",
+    });
     try {
       const payload: { message: string; session_id?: string } = { message: prompt };
       if (sessionId) payload.session_id = sessionId;
@@ -201,6 +227,10 @@ function FallbackChat({
       if (nextSessionId) {
         setSessionId(nextSessionId);
         writeChatSessionId(nextSessionId);
+        dispatchSharedState({
+          type: "set_conversation_id",
+          conversationId: nextSessionId,
+        });
       }
       const reply = typeof data.reply === "string" ? data.reply : "";
       setMessages((current) => [
@@ -210,6 +240,7 @@ function FallbackChat({
           text: reply || "I didn’t receive a reply. Please try again.",
         },
       ]);
+      dispatchActivity({ type: "succeed", id: activityId });
     } catch {
       setMessages((current) => [
         ...current,
@@ -218,6 +249,7 @@ function FallbackChat({
           text: "LYRA is offline right now. You can still book a conversation or email Efrain directly.",
         },
       ]);
+      dispatchActivity({ type: "fail", id: activityId });
     } finally {
       setBusy(false);
     }
@@ -266,9 +298,18 @@ function FallbackChat({
   );
 }
 
-function FitAssessmentPanel({ onClose }: { onClose: () => void }) {
+function FitAssessmentPanel({
+  assessment,
+  onAssessmentChange,
+  onClose,
+  dispatchActivity,
+}: {
+  assessment: FitAssessment | null;
+  onAssessmentChange: (assessment: FitAssessment | null) => void;
+  onClose: () => void;
+  dispatchActivity: (action: AgentActivityAction) => void;
+}) {
   const [jobDescription, setJobDescription] = useState("");
-  const [assessment, setAssessment] = useState<FitAssessment | null>(null);
   const [showRoleProfile, setShowRoleProfile] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -279,6 +320,12 @@ function FitAssessmentPanel({ onClose }: { onClose: () => void }) {
     if (!description || busy) return;
     setBusy(true);
     setError("");
+    const activityId = mintMessageId();
+    dispatchActivity({
+      type: "start",
+      id: activityId,
+      label: "Analyzing job requirements…",
+    });
     try {
       const data = await postJson("/v1/fit", {
         job_description: description,
@@ -287,11 +334,17 @@ function FitAssessmentPanel({ onClose }: { onClose: () => void }) {
       if (!nextAssessment) {
         throw new Error("Invalid fit assessment response");
       }
-      setAssessment(nextAssessment);
+      onAssessmentChange(nextAssessment);
+      dispatchActivity({
+        type: "succeed",
+        id: activityId,
+        label: "Matched against Efrain’s published experience.",
+      });
     } catch {
       setError(
         "LYRA could not assess this role right now. Your job description is still here so you can retry.",
       );
+      dispatchActivity({ type: "fail", id: activityId });
     } finally {
       setBusy(false);
     }
@@ -349,7 +402,7 @@ function FitAssessmentPanel({ onClose }: { onClose: () => void }) {
             <button
               className="fit-fixture-button"
               type="button"
-              onClick={() => setAssessment(FIT_ASSESSMENT_FIXTURE)}
+              onClick={() => onAssessmentChange(FIT_ASSESSMENT_FIXTURE)}
             >
               Load development fixture
             </button>
@@ -365,11 +418,13 @@ function FitAssessmentPanel({ onClose }: { onClose: () => void }) {
 type LyraHeroProps = {
   navigationState: PortfolioNavigationState;
   dispatchNavigation: (action: PortfolioNavigationAction) => void;
+  dispatchActivity: (action: AgentActivityAction) => void;
 };
 
 function LyraHero({
   navigationState,
   dispatchNavigation,
+  dispatchActivity,
 }: LyraHeroProps) {
   const starters = useStarters();
   const [runtimeFailed, setRuntimeFailed] = useState(false);
@@ -441,7 +496,17 @@ function LyraHero({
             tabIndex={-1}
             aria-label="Role fit assessment"
           >
-            <FitAssessmentPanel onClose={closePanel} />
+            <FitAssessmentPanel
+              assessment={navigationState.job_fit_assessment}
+              onAssessmentChange={(assessment) =>
+                dispatchNavigation({
+                  type: "set_job_fit_assessment",
+                  assessment,
+                })
+              }
+              onClose={closePanel}
+              dispatchActivity={dispatchActivity}
+            />
           </div>
         )}
         {activePanel === "player" && (
@@ -513,12 +578,19 @@ function LyraHero({
                   starters={starters}
                   navigationState={navigationState}
                   portfolioActions={actions}
+                  dispatchSharedState={dispatchNavigation}
+                  dispatchActivity={dispatchActivity}
                   onConnectionFailure={handleRuntimeFailure}
                 />
               </Suspense>
             </CopilotChunkBoundary>
           ) : (
-            <FallbackChat starters={starters} initialDraft={fallbackDraft} />
+            <FallbackChat
+              starters={starters}
+              initialDraft={fallbackDraft}
+              dispatchSharedState={dispatchNavigation}
+              dispatchActivity={dispatchActivity}
+            />
           )}
           <div className="fit-entry">
             <span>Explore the professional profile</span>
@@ -556,7 +628,13 @@ function LyraHero({
   );
 }
 
-function Booking({ highlighted = false }: { highlighted?: boolean }) {
+function Booking({
+  highlighted = false,
+  dispatchSharedState,
+}: {
+  highlighted?: boolean;
+  dispatchSharedState: (action: PortfolioNavigationAction) => void;
+}) {
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -566,6 +644,7 @@ function Booking({ highlighted = false }: { highlighted?: boolean }) {
     setBusy(true);
     setStatus("");
     const values = new FormData(form);
+    dispatchSharedState({ type: "set_booking_state", status: "submitting" });
     try {
       await postJson("/v1/meetings", {
         name: values.get("name"),
@@ -575,8 +654,10 @@ function Booking({ highlighted = false }: { highlighted?: boolean }) {
       }, 20_000);
       form.reset();
       setStatus("Request sent. Efrain will follow up by email.");
+      dispatchSharedState({ type: "set_booking_state", status: "submitted" });
     } catch {
       setStatus("The booking service is offline. Email galvisefrain@gmail.com instead.");
+      dispatchSharedState({ type: "set_booking_state", status: "failure" });
     } finally {
       setBusy(false);
     }
@@ -609,7 +690,21 @@ export default function App() {
     portfolioNavigationReducer,
     INITIAL_PORTFOLIO_STATE,
   );
+  const [activity, dispatchActivity] = useReducer(agentActivityReducer, null);
   const handledNavigationRequest = useRef(0);
+
+  useEffect(() => {
+    let timezone = "";
+    try {
+      timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch {
+      // The shared state remains null when timezone detection is unavailable.
+    }
+    dispatchNavigation({
+      type: "set_visitor_timezone",
+      timezone,
+    });
+  }, []);
 
   useEffect(() => {
     if (
@@ -691,10 +786,12 @@ export default function App() {
           <a href="https://github.com/efrain-galvis" target="_blank" rel="noreferrer">GitHub</a>
         </nav>
       </header>
+      <AgentActivity activity={activity} />
       <main>
         <LyraHero
           navigationState={navigationState}
           dispatchNavigation={dispatchNavigation}
+          dispatchActivity={dispatchActivity}
         />
         <section
           className={`work${
@@ -718,6 +815,7 @@ export default function App() {
         </section>
         <Booking
           highlighted={navigationState.highlighted_section === "contact"}
+          dispatchSharedState={dispatchNavigation}
         />
       </main>
       <footer>

@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import {
   CopilotKitProvider,
   type CopilotKitProviderProps,
@@ -14,8 +14,10 @@ import {
   readChatSession,
   writeChatTurns,
 } from "./chatLimits";
+import type { AgentActivityAction } from "./AgentActivity";
 import {
   PORTFOLIO_SECTIONS,
+  type PortfolioNavigationAction,
   type PortfolioNavigationState,
 } from "./portfolioNavigation";
 import { PUBLISHED_PROJECTS } from "./projects";
@@ -26,6 +28,8 @@ type PortfolioActions = {
   openProject: (projectId: string) => unknown;
   filterProjects: (filters: string[]) => unknown;
   openTimeline: (filters: string[]) => unknown;
+  setVisitorIntent: (intent: string) => unknown;
+  showJobFitAssessment: (assessment: unknown) => unknown;
   showContactSection: () => unknown;
 };
 
@@ -35,6 +39,8 @@ type Props = {
   starters: string[];
   navigationState: PortfolioNavigationState;
   portfolioActions: PortfolioActions;
+  dispatchSharedState: (action: PortfolioNavigationAction) => void;
+  dispatchActivity: (action: AgentActivityAction) => void;
   onConnectionFailure: (draft?: string) => void;
 };
 
@@ -47,11 +53,66 @@ const CONNECTION_FAILURE_CODES = new Set([
   "agent_connect_failed",
 ]);
 
+const fitAssessmentSchema = z.object({
+  role_title: z.string(),
+  overall_score: z.number().int().min(0).max(100),
+  label: z.enum(["Strong", "Partial", "Limited", "No evidence"]),
+  assessment_type: z.literal("AI estimate"),
+  dimensions: z.array(
+    z.object({
+      name: z.string(),
+      score: z.number().int().min(0).max(100),
+    }),
+  ),
+  matches: z.array(
+    z.object({
+      requirement: z.string(),
+      level: z.enum(["Strong", "Partial", "No evidence"]),
+      evidence_id: z.string().optional(),
+      evidence_text: z.string().optional(),
+      confidence: z.number().min(0).max(1),
+    }),
+  ),
+  gaps: z.array(z.string()),
+  summary: z.string(),
+});
+
+function resultFailed(result: unknown): boolean {
+  return (
+    typeof result === "object" &&
+    result !== null &&
+    "ok" in result &&
+    (result as { ok: unknown }).ok === false
+  );
+}
+
+async function runVisibleActivity(
+  dispatch: Props["dispatchActivity"],
+  label: string,
+  operation: () => unknown | Promise<unknown>,
+) {
+  const id = mintMessageId();
+  dispatch({ type: "start", id, label });
+  await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
+  try {
+    const result = await operation();
+    dispatch({ type: resultFailed(result) ? "fail" : "succeed", id });
+    return result;
+  } catch (error) {
+    dispatch({ type: "fail", id });
+    throw error;
+  }
+}
+
 function PortfolioTools({
   agentId,
   navigationState,
   portfolioActions,
-}: Pick<Props, "agentId" | "navigationState" | "portfolioActions">) {
+  dispatchActivity,
+}: Pick<
+  Props,
+  "agentId" | "navigationState" | "portfolioActions" | "dispatchActivity"
+>) {
   useAgentContext({
     description:
       "Current portfolio UI state. Use it to understand what the visitor is viewing and which filters are active.",
@@ -59,6 +120,11 @@ function PortfolioTools({
       active_section: navigationState.active_section,
       selected_project: navigationState.selected_project,
       timeline_filter: navigationState.timeline_filter,
+      visitor_intent: navigationState.visitor_intent,
+      job_fit_assessment: navigationState.job_fit_assessment,
+      visitor_timezone: navigationState.visitor_timezone,
+      conversation_id: navigationState.conversation_id,
+      booking_state: navigationState.booking_state,
       project_filters: navigationState.project_filters,
       available_section_ids: [...PORTFOLIO_SECTIONS],
       available_project_ids: PUBLISHED_PROJECTS.map(({ id }) => id),
@@ -73,7 +139,9 @@ function PortfolioTools({
       agentId,
       parameters: z.object({ section_id: z.string() }),
       handler: async ({ section_id }) =>
-        portfolioActions.navigateToSection(section_id),
+        runVisibleActivity(dispatchActivity, "Opening the requested section…", () =>
+          portfolioActions.navigateToSection(section_id),
+        ),
     },
     [agentId, portfolioActions],
   );
@@ -86,7 +154,9 @@ function PortfolioTools({
       agentId,
       parameters: z.object({ section_id: z.string() }),
       handler: async ({ section_id }) =>
-        portfolioActions.highlightSection(section_id),
+        runVisibleActivity(dispatchActivity, "Highlighting relevant information…", () =>
+          portfolioActions.highlightSection(section_id),
+        ),
     },
     [agentId, portfolioActions],
   );
@@ -99,7 +169,9 @@ function PortfolioTools({
       agentId,
       parameters: z.object({ project_id: z.string() }),
       handler: async ({ project_id }) =>
-        portfolioActions.openProject(project_id),
+        runVisibleActivity(dispatchActivity, "Finding supporting projects…", () =>
+          portfolioActions.openProject(project_id),
+        ),
     },
     [agentId, portfolioActions],
   );
@@ -112,7 +184,9 @@ function PortfolioTools({
       agentId,
       parameters: z.object({ criteria: z.array(z.string()) }),
       handler: async ({ criteria }) =>
-        portfolioActions.filterProjects(criteria),
+        runVisibleActivity(dispatchActivity, "Finding supporting projects…", () =>
+          portfolioActions.filterProjects(criteria),
+        ),
     },
     [agentId, portfolioActions],
   );
@@ -124,9 +198,44 @@ function PortfolioTools({
         "Open the career timeline with filter IDs from its published filter list. Pass an empty list to show all milestones.",
       agentId,
       parameters: z.object({ filters: z.array(z.string()) }),
-      handler: async ({ filters }) => portfolioActions.openTimeline(filters),
+      handler: async ({ filters }) =>
+        runVisibleActivity(dispatchActivity, "Reviewing career history…", () =>
+          portfolioActions.openTimeline(filters),
+        ),
     },
     [agentId, portfolioActions],
+  );
+
+  useFrontendTool(
+    {
+      name: "set_visitor_intent",
+      description:
+        "Update the visitor's current high-level intent when they state or change their goal.",
+      agentId,
+      parameters: z.object({ visitor_intent: z.string().max(160) }),
+      handler: async ({ visitor_intent }) =>
+        runVisibleActivity(dispatchActivity, "Updating conversation context…", () =>
+          portfolioActions.setVisitorIntent(visitor_intent),
+        ),
+    },
+    [agentId, dispatchActivity, portfolioActions],
+  );
+
+  useFrontendTool(
+    {
+      name: "show_job_fit_assessment",
+      description:
+        "Display a grounded job fit assessment that follows the published assessment schema.",
+      agentId,
+      parameters: z.object({ assessment: fitAssessmentSchema }),
+      handler: async ({ assessment }) =>
+        runVisibleActivity(
+          dispatchActivity,
+          "Matching against Efrain’s experience…",
+          () => portfolioActions.showJobFitAssessment(assessment),
+        ),
+    },
+    [agentId, dispatchActivity, portfolioActions],
   );
 
   useFrontendTool(
@@ -136,7 +245,10 @@ function PortfolioTools({
         "Scroll to and focus the private contact form. Do not ask for personal information in chat.",
       agentId,
       parameters: z.object({}),
-      handler: async () => portfolioActions.showContactSection(),
+      handler: async () =>
+        runVisibleActivity(dispatchActivity, "Checking Efrain’s availability…", () =>
+          portfolioActions.showContactSection(),
+        ),
     },
     [agentId, portfolioActions],
   );
@@ -163,10 +275,14 @@ function Chat({
   surfaceError,
   setSurfaceError,
   onPendingPrompt,
+  dispatchSharedState,
+  dispatchActivity,
 }: Pick<Props, "agentId" | "starters"> & {
   surfaceError: string;
   setSurfaceError: (message: string) => void;
   onPendingPrompt: (prompt: string) => void;
+  dispatchSharedState: Props["dispatchSharedState"];
+  dispatchActivity: Props["dispatchActivity"];
 }) {
   const { agent, isReady } = useAgent({ agentId });
   const [input, setInput] = useState("");
@@ -174,24 +290,56 @@ function Chat({
   const [turns, setTurns] = useState(initialSession.turns);
   const spent = turns >= CHAT_MAX_TURNS;
 
+  useEffect(() => {
+    dispatchSharedState({
+      type: "set_conversation_id",
+      conversationId: initialSession.sessionId,
+    });
+  }, [dispatchSharedState, initialSession.sessionId]);
+
+  function promptActivityLabel(prompt: string) {
+    if (/\b(job|role|fit|requirements?)\b/i.test(prompt)) {
+      return "Analyzing job requirements…";
+    }
+    if (/\b(project|portfolio|evidence|work)\b/i.test(prompt)) {
+      return "Finding supporting projects…";
+    }
+    if (/\b(available|availability|book|meeting|conversation)\b/i.test(prompt)) {
+      return "Checking Efrain’s availability…";
+    }
+    return "Reviewing your request…";
+  }
+
   async function send(prompt: string) {
     const text = prompt.trim().slice(0, 2000);
     if (!text || !isReady || agent.isRunning || spent) return;
     setSurfaceError("");
     onPendingPrompt(text);
     setInput("");
+    dispatchSharedState({
+      type: "set_visitor_intent",
+      intent: "talk_with_lyra",
+    });
     const messagesBeforeRun = [...agent.messages];
+    const activityId = mintMessageId();
+    dispatchActivity({
+      type: "start",
+      id: activityId,
+      label: promptActivityLabel(text),
+    });
     try {
       agent.addMessage({ id: mintMessageId(), role: "user", content: text });
       await agent.runAgent();
       const nextTurns = turns + 1;
       setTurns(nextTurns);
       writeChatTurns(nextTurns);
+      dispatchActivity({ type: "succeed", id: activityId });
       onPendingPrompt("");
     } catch {
       agent.setMessages(messagesBeforeRun);
       setInput(text);
       onPendingPrompt("");
+      dispatchActivity({ type: "fail", id: activityId });
       setSurfaceError(
         "LYRA could not complete that reply. Your message is restored so you can retry.",
       );
@@ -292,6 +440,7 @@ export default function CopilotSurface(props: Props) {
         agentId={props.agentId}
         navigationState={props.navigationState}
         portfolioActions={props.portfolioActions}
+        dispatchActivity={props.dispatchActivity}
       />
       <Chat
         agentId={props.agentId}
@@ -299,6 +448,8 @@ export default function CopilotSurface(props: Props) {
         surfaceError={surfaceError}
         setSurfaceError={setSurfaceError}
         onPendingPrompt={handlePendingPrompt}
+        dispatchSharedState={props.dispatchSharedState}
+        dispatchActivity={props.dispatchActivity}
       />
     </CopilotKitProvider>
   );

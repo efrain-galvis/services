@@ -5,6 +5,7 @@ import {
   portfolioNavigationReducer,
   type PortfolioNavigationAction,
 } from "../src/portfolioNavigation";
+import { FIT_ASSESSMENT_FIXTURE } from "../src/fitAssessment";
 
 describe("portfolio navigation reducer", () => {
   it("keeps active section, selected project, and filters in shared state", () => {
@@ -43,6 +44,46 @@ describe("portfolio navigation reducer", () => {
       portfolioNavigationReducer(highlighted, { type: "clear_highlight" })
         .highlighted_section,
     ).toBeNull();
+  });
+
+  it("synchronizes visitor, fit, session, timezone, and booking fields", () => {
+    const actions: PortfolioNavigationAction[] = [
+      { type: "set_visitor_intent", intent: "  assess a role  " },
+      {
+        type: "set_job_fit_assessment",
+        assessment: FIT_ASSESSMENT_FIXTURE,
+      },
+      { type: "set_visitor_timezone", timezone: " America/New_York " },
+      { type: "set_conversation_id", conversationId: " conversation-123 " },
+      { type: "set_booking_state", status: "submitting" },
+      { type: "set_booking_state", status: "submitted" },
+    ];
+    const result = actions.reduce(
+      portfolioNavigationReducer,
+      INITIAL_PORTFOLIO_STATE,
+    );
+
+    expect(result).toMatchObject({
+      visitor_intent: "review_job_fit_assessment",
+      job_fit_assessment: FIT_ASSESSMENT_FIXTURE,
+      visitor_timezone: "America/New_York",
+      conversation_id: "conversation-123",
+      booking_state: { status: "submitted" },
+    });
+  });
+
+  it("derives visitor intent from UI navigation changes", () => {
+    const selected = portfolioNavigationReducer(INITIAL_PORTFOLIO_STATE, {
+      type: "open_project",
+      projectId: "published",
+    });
+    const booking = portfolioNavigationReducer(selected, {
+      type: "navigate",
+      sectionId: "contact",
+    });
+
+    expect(selected.visitor_intent).toBe("review_project");
+    expect(booking.visitor_intent).toBe("request_conversation");
   });
 });
 
@@ -95,6 +136,30 @@ describe("portfolio frontend action handlers", () => {
     expect(actions.openProject("published")).toEqual({
       ok: true,
       project_id: "published",
+    });
+  });
+
+  it("accepts only schema-valid fit assessments from an agent tool", () => {
+    const dispatch = vi.fn<(action: PortfolioNavigationAction) => void>();
+    const actions = createPortfolioActionHandlers(dispatch, []);
+
+    expect(actions.showJobFitAssessment({ role_title: "Incomplete" })).toEqual({
+      ok: false,
+      message: "The job fit assessment did not match the published schema.",
+    });
+    expect(dispatch).not.toHaveBeenCalled();
+
+    expect(actions.showJobFitAssessment(FIT_ASSESSMENT_FIXTURE)).toMatchObject({
+      ok: true,
+      role_title: FIT_ASSESSMENT_FIXTURE.role_title,
+    });
+    const finalState = dispatch.mock.calls
+      .map(([action]) => action)
+      .reduce(portfolioNavigationReducer, INITIAL_PORTFOLIO_STATE);
+    expect(finalState).toMatchObject({
+      active_section: "role-fit",
+      job_fit_assessment: FIT_ASSESSMENT_FIXTURE,
+      visitor_intent: "review_job_fit_assessment",
     });
   });
 });
