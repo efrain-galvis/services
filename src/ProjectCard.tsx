@@ -4,6 +4,7 @@ import type { Project } from "./projects";
 export type ProjectCardProps = {
   project: Project;
   index?: number;
+  onExploreArchitecture?: (project: Project) => void;
 };
 
 function DetailList({
@@ -28,8 +29,10 @@ function DetailList({
 export default function ProjectCard({
   project,
   index = 0,
+  onExploreArchitecture,
 }: ProjectCardProps) {
   const titleId = useId();
+  const architectureDescriptionId = useId();
   const isConfidential = project.confidentialityLevel === "confidential";
   const confidentialityLabel =
     project.confidentialityLevel === "anonymized"
@@ -165,12 +168,21 @@ export default function ProjectCard({
         </p>
         <button
           type="button"
-          disabled
-          title="Architecture diagrams are planned for FR-014"
+          disabled={!project.architectureGraph}
+          aria-disabled={!project.architectureGraph}
+          aria-describedby={architectureDescriptionId}
+          onClick={() => {
+            if (project.architectureGraph) onExploreArchitecture?.(project);
+          }}
         >
           Explore architecture <span aria-hidden="true">↗</span>
         </button>
       </footer>
+      <p className="project-architecture-description" id={architectureDescriptionId}>
+        {project.architectureGraph
+          ? "Open the published architecture nodes and flows."
+          : "Unavailable until a published architecture graph is linked to this project."}
+      </p>
     </section>
   );
 }

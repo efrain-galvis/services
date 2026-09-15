@@ -26,7 +26,21 @@ so the UI does not infer project names, clients, outcomes, or metrics.
 In local development, choose **Load development fixture** to exercise a complete
 ProjectCard layout. The fixture is visibly labeled, is not production content,
 and is never included in the published collection. Fuller project cards wait on
-Efrain knowledge updates. The architecture CTA remains disabled until FR-014.
+Efrain knowledge updates.
+
+## Architecture diagrams
+
+ProjectCard enables **Explore architecture** only when its controlled project
+data includes a typed architecture graph. Without one, the CTA remains disabled
+and explains that published evidence is required. The production collection has
+no architecture graphs today, so ArchitectureDiagram fails closed to an
+evidence-cited thin state rather than inventing client systems.
+
+For layout QA, run the local dev server, open **View selected work**, choose
+**Load development fixture**, then **Explore architecture**. The fixture graph
+is dynamically imported, prominently labeled as non-evidence, and is also
+available in a non-development build only when
+`VITE_ARCHITECTURE_DRAFT=true`.
 
 ## Local development
 

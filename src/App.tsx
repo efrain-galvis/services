@@ -39,7 +39,9 @@ const SITE_TOKEN =
 const SHOW_FIT_FIXTURE =
   import.meta.env.DEV || import.meta.env.VITE_FIT_DRAFT === "true";
 const SHOW_PROJECT_FIXTURE =
-  import.meta.env.DEV || import.meta.env.VITE_PROJECT_DRAFT === "true";
+  import.meta.env.DEV ||
+  import.meta.env.VITE_PROJECT_DRAFT === "true" ||
+  import.meta.env.VITE_ARCHITECTURE_DRAFT === "true";
 const REQUEST_HEADERS: Record<string, string> = SITE_TOKEN
   ? { "X-Site-Token": SITE_TOKEN }
   : {};

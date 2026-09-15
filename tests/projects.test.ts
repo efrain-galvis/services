@@ -155,7 +155,37 @@ describe("project UI safety states", () => {
 
     expect(html).toContain("Development fixture");
     expect(html).toContain("Layout QA only");
-    expect(html).toContain("disabled");
     expect(html).toContain("Explore architecture");
+  });
+
+  it("disables Explore architecture with an accessible explanation when no graph exists", () => {
+    const html = renderToStaticMarkup(createElement(ProjectCard, {
+      project: project(),
+    }));
+
+    expect(html).toContain("Explore architecture");
+    expect(html).toContain("disabled");
+    expect(html).toContain('aria-disabled="true"');
+    expect(html).toContain(
+      "Unavailable until a published architecture graph is linked",
+    );
+  });
+
+  it("enables Explore architecture for a typed project graph", () => {
+    const html = renderToStaticMarkup(createElement(ProjectCard, {
+      project: project({
+        architectureGraph: {
+          id: "graph",
+          title: "Published graph",
+          nodes: [{ id: "node", label: "Node" }],
+          edges: [],
+          evidenceId: "project.graph",
+        },
+      }),
+    }));
+
+    expect(html).toContain('aria-disabled="false"');
+    expect(html).not.toContain(" disabled");
+    expect(html).toContain("Open the published architecture nodes and flows.");
   });
 });

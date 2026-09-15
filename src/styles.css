@@ -494,7 +494,13 @@ footer { display: flex; justify-content: space-between; gap: 2rem; border-top: 1
   flex: none; border: 1px solid var(--line); border-radius: .45rem; padding: .55rem .65rem;
   color: #77736c; background: transparent; font: inherit; text-transform: uppercase; letter-spacing: inherit;
 }
+.project-card-footer button:not(:disabled) { border-color: #c8ff4c66; color: var(--acid); cursor: pointer; }
+.project-card-footer button:not(:disabled):hover { color: #10100f; background: var(--acid); }
 .project-card-footer button:disabled { cursor: not-allowed; }
+.project-architecture-description {
+  margin: 0; padding: 0 1rem .85rem; color: #918c84;
+  font: .58rem/1.45 "JetBrains Mono", monospace; text-align: right;
+}
 .project-card-redacted { box-shadow: inset 3px 0 0 #ff6a3d88; }
 .project-redacted-message { padding: clamp(1.5rem, 4vw, 3rem); text-align: center; }
 .project-redacted-message strong { color: #ffb29a; }
@@ -517,6 +523,72 @@ footer { display: flex; justify-content: space-between; gap: 2rem; border-top: 1
 .project-empty p { margin: .5rem 0 0; color: var(--muted); font-size: .82rem; }
 .project-grid-footer { padding: .9rem clamp(1.1rem, 2.25vw, 1.55rem); border-top: 1px solid var(--line); }
 .project-grid-footer span { flex: none; color: var(--acid); }
+
+.arch-shell {
+  width: 100%; flex: none; overflow: hidden; border: 1px solid #4b4941; border-radius: .9rem;
+  background:
+    linear-gradient(115deg, #ff6a3d08 0, transparent 30%),
+    linear-gradient(145deg, #201f1b, #131311 55%);
+  color: var(--ink); box-shadow: 0 1.5rem 4rem #0006;
+}
+.arch-header {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;
+  padding: clamp(1.1rem, 2.25vw, 1.55rem); border-bottom: 1px solid var(--line);
+}
+.arch-header > div { min-width: 0; }
+.arch-kicker, .arch-header > div > p:last-child, .arch-fixture-warning,
+.arch-alternative h3, .arch-alternative span, .arch-alternative small,
+.arch-footer, .arch-thin-state > span, .arch-thin-state small {
+  font-family: "JetBrains Mono", monospace;
+}
+.arch-kicker {
+  margin: 0 0 .55rem; color: #ff8b68; font-size: .72rem; text-transform: uppercase; letter-spacing: .12em;
+}
+.arch-header h2 { max-width: none; font-size: clamp(1.5rem, 3vw, 2.5rem); letter-spacing: -.025em; }
+.arch-header > div > p:last-child { max-width: 75ch; margin: .65rem 0 0; color: #bdb7ae; font-size: .68rem; line-height: 1.5; }
+.arch-fixture-warning {
+  margin: 0; padding: .65rem clamp(1.1rem, 2.25vw, 1.55rem); border-bottom: 1px solid #f2c45c44;
+  color: #f2c45c; background: #f2c45c0b; font-size: .62rem; line-height: 1.5;
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.arch-canvas { padding: clamp(1rem, 3vw, 2rem); overflow-x: auto; border-bottom: 1px solid var(--line); }
+.arch-canvas svg { display: block; width: 100%; min-width: 38rem; height: auto; }
+.arch-edges line { stroke: #77736c; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.arch-edges marker path { fill: var(--acid); }
+.arch-edges text {
+  fill: #aaa49c; font: 12px "JetBrains Mono", monospace; text-anchor: middle;
+  paint-order: stroke; stroke: #171715; stroke-width: 6px; stroke-linejoin: round;
+}
+.arch-nodes rect { fill: #1f211a; stroke: #c8ff4c88; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.arch-nodes text { fill: var(--ink); font: 500 15px "Libre Franklin", system-ui, sans-serif; text-anchor: middle; }
+.arch-nodes .arch-node-index {
+  fill: #ff9a7c; font: 9px "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: 1px;
+}
+.arch-alternative { padding: clamp(1.1rem, 2.25vw, 1.55rem); }
+.arch-alternative h3 {
+  margin: 0 0 .8rem; color: #aaa49c; font-size: .65rem; font-weight: 500;
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.arch-alternative ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; margin: 0; padding: 0; list-style: none; }
+.arch-alternative li { min-width: 0; display: grid; gap: .35rem; padding: .8rem; border: 1px solid var(--line); border-radius: .55rem; background: #171715; }
+.arch-alternative strong { color: #e5dfd6; font-size: .82rem; }
+.arch-alternative span { color: #aaa49c; font-size: .59rem; line-height: 1.5; }
+.arch-alternative small { color: var(--acid); font-size: .56rem; text-transform: uppercase; }
+.arch-footer {
+  display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  padding: .9rem clamp(1.1rem, 2.25vw, 1.55rem); border-top: 1px solid var(--line);
+  color: #aaa49c; font-size: .63rem; line-height: 1.5; text-transform: uppercase; letter-spacing: .04em;
+}
+.arch-footer p { margin: 0; }
+.arch-footer span { flex: none; color: var(--acid); }
+.arch-thin-state {
+  margin: clamp(1rem, 2.25vw, 1.55rem); padding: clamp(1.5rem, 4vw, 3rem);
+  border: 1px dashed #56534b; border-radius: .65rem; text-align: center;
+}
+.arch-thin-state > span { color: #ff9a7c; font-size: .62rem; text-transform: uppercase; letter-spacing: .1em; }
+.arch-thin-state h3 { margin: .8rem auto 0; color: var(--ink); font-size: clamp(1.35rem, 3vw, 2rem); }
+.arch-thin-state p { max-width: 62ch; margin: .7rem auto; color: var(--muted); font-size: .85rem; line-height: 1.6; }
+.arch-thin-state small { display: block; color: var(--acid); font-size: .62rem; text-transform: uppercase; }
 
 @media (max-width: 720px) {
   .site-header { align-items: flex-start; }
@@ -542,9 +614,11 @@ footer { display: flex; justify-content: space-between; gap: 2rem; border-top: 1
   .player-radar-panel { border-right: 0; border-bottom: 1px solid var(--line); }
   .timeline-controls, .timeline-footer { align-items: flex-start; flex-direction: column; }
   .timeline-facts { grid-template-columns: 1fr; }
-  .project-controls, .project-card-footer, .project-grid-footer { align-items: flex-start; flex-direction: column; }
+  .project-controls, .project-card-footer, .project-grid-footer, .arch-footer { align-items: flex-start; flex-direction: column; }
   .project-grid { grid-template-columns: 1fr; }
   .project-detail-grid { grid-template-columns: 1fr; }
+  .project-architecture-description { text-align: left; }
+  .arch-alternative ol { grid-template-columns: 1fr; }
   footer { flex-direction: column; }
 }
 

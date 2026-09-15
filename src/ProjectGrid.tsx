@@ -1,4 +1,6 @@
 import { useId, useState } from "react";
+import ArchitectureDiagram from "./ArchitectureDiagram";
+import type { ArchitectureDiagramModel } from "./architecture";
 import ProjectCard from "./ProjectCard";
 import {
   filterProjects,
@@ -26,10 +28,13 @@ export default function ProjectGrid({
   const titleId = useId();
   const statusId = useId();
   const [filters, setFilters] = useState<string[]>([]);
-  const [fixtureLoaded, setFixtureLoaded] = useState(false);
+  const [fixtureProject, setFixtureProject] = useState<Project | null>(null);
+  const [fixtureBusy, setFixtureBusy] = useState(false);
+  const [activeArchitecture, setActiveArchitecture] =
+    useState<ArchitectureDiagramModel | null>(null);
   const sourceProjects =
-    fixtureLoaded && projects.length === 0
-      ? [PROJECT_CARD_DEVELOPMENT_FIXTURE]
+    fixtureProject && projects.length === 0
+      ? [fixtureProject]
       : projects;
   const filterOptions = getProjectFilters(sourceProjects);
   const visibleProjects = filterProjects(sourceProjects, filters);
@@ -39,6 +44,31 @@ export default function ProjectGrid({
       current.includes(filter)
         ? current.filter((value) => value !== filter)
         : [...current, filter],
+    );
+  }
+
+  async function loadDevelopmentFixture() {
+    if (!showDevelopmentFixture || fixtureBusy) return;
+    setFixtureBusy(true);
+    try {
+      const { ARCHITECTURE_DEVELOPMENT_FIXTURE } = await import(
+        "./architecture.fixture"
+      );
+      setFixtureProject({
+        ...PROJECT_CARD_DEVELOPMENT_FIXTURE,
+        architectureGraph: ARCHITECTURE_DEVELOPMENT_FIXTURE,
+      });
+    } finally {
+      setFixtureBusy(false);
+    }
+  }
+
+  if (activeArchitecture) {
+    return (
+      <ArchitectureDiagram
+        diagram={activeArchitecture}
+        onClose={() => setActiveArchitecture(null)}
+      />
     );
   }
 
@@ -108,15 +138,28 @@ export default function ProjectGrid({
           <p>{thinState.description}</p>
           <small>Evidence / {thinState.evidenceId}</small>
           {showDevelopmentFixture && (
-            <button type="button" onClick={() => setFixtureLoaded(true)}>
-              Load development fixture
+            <button
+              type="button"
+              disabled={fixtureBusy}
+              onClick={() => void loadDevelopmentFixture()}
+            >
+              {fixtureBusy ? "Loading fixture…" : "Load development fixture"}
             </button>
           )}
         </div>
       ) : visibleProjects.length > 0 ? (
         <div className="project-grid" aria-describedby={statusId}>
           {visibleProjects.map((project, index) => (
-            <ProjectCard project={project} index={index} key={project.id} />
+            <ProjectCard
+              project={project}
+              index={index}
+              key={project.id}
+              onExploreArchitecture={(selectedProject) => {
+                if (selectedProject.architectureGraph) {
+                  setActiveArchitecture(selectedProject.architectureGraph);
+                }
+              }}
+            />
           ))}
         </div>
       ) : (
