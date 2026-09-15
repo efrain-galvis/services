@@ -82,6 +82,33 @@ h1 { margin: 0; font-size: clamp(2.5rem, 6.2vw, 6.5rem); line-height: .96; lette
 .privacy-note { color: var(--muted); font-size: .7rem; line-height: 1.5; }
 .loading-state { margin: auto; color: var(--muted); }
 
+.agent-activity {
+  position: fixed; right: clamp(1rem, 3vw, 2rem); bottom: 1rem; z-index: 40;
+  width: min(26rem, calc(100% - 2rem)); display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .75rem;
+  padding: .8rem .9rem; border: 1px solid #c8ff4c66; border-radius: .7rem;
+  color: var(--ink); background: #171715f2; box-shadow: 0 1rem 3rem #000a;
+  backdrop-filter: blur(12px);
+}
+.agent-activity.failure { border-color: #ff6a3d88; }
+.agent-activity-indicator {
+  width: .65rem; height: .65rem; border: 2px solid currentColor; border-radius: 50%;
+  color: var(--acid); background: currentColor; box-shadow: 0 0 .75rem currentColor;
+}
+.agent-activity.pending .agent-activity-indicator {
+  background: transparent; border-top-color: transparent; animation: activity-spin .9s linear infinite;
+}
+.agent-activity.failure .agent-activity-indicator { color: var(--orange); }
+.agent-activity-copy { min-width: 0; display: grid; gap: .2rem; }
+.agent-activity-copy strong, .agent-activity-status {
+  font: 500 .58rem "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: .08em;
+}
+.agent-activity-copy strong { color: var(--muted); }
+.agent-activity-copy > span { overflow-wrap: anywhere; font-size: .82rem; line-height: 1.35; }
+.agent-activity-status { color: var(--acid); white-space: nowrap; }
+.agent-activity.failure .agent-activity-status { color: #ff9a7c; }
+@keyframes activity-spin { to { transform: rotate(360deg); } }
+
 .work, .booking { padding: clamp(4rem, 8vw, 8rem) 0; border-top: 1px solid var(--line); }
 .section-heading { display: grid; grid-template-columns: .7fr 1.5fr; gap: 2rem; }
 h2 { font-size: clamp(2rem, 4vw, 4.25rem); line-height: 1.02; letter-spacing: -.04em; margin: 0; max-width: 16ch; }
@@ -641,9 +668,12 @@ footer { display: flex; justify-content: space-between; gap: 2rem; border-top: 1
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
+  .agent-activity.pending .agent-activity-indicator { animation: none; }
 }
 
 @media (max-width: 460px) {
+  .agent-activity { grid-template-columns: auto minmax(0, 1fr); }
+  .agent-activity-status { grid-column: 2; }
   .fit-overview { grid-template-columns: 1fr; justify-items: start; }
   .fit-counts { grid-column: auto; }
   .fit-score { width: 8.5rem; }
