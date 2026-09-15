@@ -2,6 +2,7 @@ import {
   adaptFitAssessment,
   type FitAssessment,
 } from "./fitAssessment";
+import type { BookingFlowStatus } from "./bookingFlow";
 
 export const PORTFOLIO_SECTIONS = [
   "lyra",
@@ -15,7 +16,7 @@ export const PORTFOLIO_SECTIONS = [
 
 export type PortfolioSectionId = (typeof PORTFOLIO_SECTIONS)[number];
 
-export type BookingStatus = "idle" | "submitting" | "submitted" | "failure";
+export type BookingStatus = BookingFlowStatus;
 
 export type BookingState = {
   status: BookingStatus;
@@ -304,6 +305,20 @@ export function createPortfolioActionHandlers(
         requestFocus: true,
       });
       return { ok: true, section_id: "contact" as const };
+    },
+
+    startBooking() {
+      dispatch({ type: "set_booking_state", status: "picking" });
+      dispatch({
+        type: "navigate",
+        sectionId: "contact",
+        requestFocus: true,
+      });
+      return {
+        ok: true,
+        section_id: "contact" as const,
+        booking_state: "picking" as const,
+      };
     },
   };
 }

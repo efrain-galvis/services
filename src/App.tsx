@@ -23,6 +23,8 @@ import AgentActivity, {
   agentActivityReducer,
   type AgentActivityAction,
 } from "./AgentActivity";
+import BookingWidget from "./BookingWidget";
+import { createCalendarClient } from "./calendarClient";
 import { DEFAULT_SITE_AGENT_URL } from "./config";
 import CareerTimeline from "./CareerTimeline";
 import FitDashboard from "./FitDashboard";
@@ -62,6 +64,10 @@ const SHOW_PROJECT_FIXTURE =
 const REQUEST_HEADERS: Record<string, string> = SITE_TOKEN
   ? { "X-Site-Token": SITE_TOKEN }
   : {};
+const CALENDAR_CLIENT = createCalendarClient({
+  baseUrl: BACKEND_URL,
+  siteToken: SITE_TOKEN,
+});
 const DEFAULT_STARTERS = [
   "What production AI systems has Efrain built?",
   "How would you evaluate an agent before launch?",
@@ -631,37 +637,20 @@ function LyraHero({
 function Booking({
   highlighted = false,
   dispatchSharedState,
+  dispatchActivity,
+  timezone,
 }: {
   highlighted?: boolean;
   dispatchSharedState: (action: PortfolioNavigationAction) => void;
+  dispatchActivity: (action: AgentActivityAction) => void;
+  timezone: string;
 }) {
-  const [status, setStatus] = useState("");
-  const [busy, setBusy] = useState(false);
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    if (!form.reportValidity()) return;
-    setBusy(true);
-    setStatus("");
-    const values = new FormData(form);
-    dispatchSharedState({ type: "set_booking_state", status: "submitting" });
-    try {
-      await postJson("/v1/meetings", {
-        name: values.get("name"),
-        email: values.get("email"),
-        message: values.get("message"),
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      }, 20_000);
-      form.reset();
-      setStatus("Request sent. Efrain will follow up by email.");
-      dispatchSharedState({ type: "set_booking_state", status: "submitted" });
-    } catch {
-      setStatus("The booking service is offline. Email galvisefrain@gmail.com instead.");
-      dispatchSharedState({ type: "set_booking_state", status: "failure" });
-    } finally {
-      setBusy(false);
-    }
-  }
+  const handleStatusChange = useCallback(
+    (status: PortfolioNavigationState["booking_state"]["status"]) =>
+      dispatchSharedState({ type: "set_booking_state", status }),
+    [dispatchSharedState],
+  );
+
   return (
     <section
       className={`booking${highlighted ? " portfolio-highlight" : ""}`}
@@ -672,15 +661,14 @@ function Booking({
       <div>
         <p className="eyebrow">Book / private channel</p>
         <h2 id="book-title">Ready to put a real problem on the table?</h2>
-        <p>Personal information goes directly to the meeting service, never through LYRA or a model.</p>
+        <p>Personal information goes directly to the calendar service, never through LYRA or a model.</p>
       </div>
-      <form onSubmit={submit}>
-        <label>Name<input name="name" autoComplete="name" maxLength={100} required /></label>
-        <label>Email<input name="email" type="email" autoComplete="email" maxLength={254} required /></label>
-        <label className="wide">What should we discuss?<textarea name="message" rows={3} maxLength={2000} required /></label>
-        <button type="submit" disabled={busy}>{busy ? "Sending…" : "Request a conversation"}</button>
-        <p className="form-status" aria-live="polite">{status}</p>
-      </form>
+      <BookingWidget
+        timezone={timezone}
+        client={CALENDAR_CLIENT}
+        onStatusChange={handleStatusChange}
+        dispatchActivity={dispatchActivity}
+      />
     </section>
   );
 }
@@ -816,6 +804,8 @@ export default function App() {
         <Booking
           highlighted={navigationState.highlighted_section === "contact"}
           dispatchSharedState={dispatchNavigation}
+          dispatchActivity={dispatchActivity}
+          timezone={navigationState.visitor_timezone || "UTC"}
         />
       </main>
       <footer>
