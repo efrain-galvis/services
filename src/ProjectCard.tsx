@@ -74,6 +74,11 @@ export default function ProjectCard({
     project.productionConsiderations.length ||
     project.measurableResults.length,
   );
+  const architectureDescription = project.architectureGraph
+    ? project.developmentFixture
+      ? "Open the development fixture architecture nodes and flows."
+      : "Open the published architecture nodes and flows."
+    : "Unavailable until a published architecture graph is linked to this project.";
 
   return (
     <section className="project-card" aria-labelledby={titleId}>
@@ -179,9 +184,7 @@ export default function ProjectCard({
         </button>
       </footer>
       <p className="project-architecture-description" id={architectureDescriptionId}>
-        {project.architectureGraph
-          ? "Open the published architecture nodes and flows."
-          : "Unavailable until a published architecture graph is linked to this project."}
+        {architectureDescription}
       </p>
     </section>
   );

@@ -171,21 +171,39 @@ describe("project UI safety states", () => {
     );
   });
 
-  it("enables Explore architecture for a typed project graph", () => {
-    const html = renderToStaticMarkup(createElement(ProjectCard, {
+  it("uses distinct helper copy for fixture and published architecture CTAs", () => {
+    const architectureGraph: Project["architectureGraph"] = {
+      id: "graph",
+      title: "Published graph",
+      nodes: [{ id: "node", label: "Node" }],
+      edges: [],
+      evidenceId: "project.graph",
+    };
+    const publishedHtml = renderToStaticMarkup(createElement(ProjectCard, {
       project: project({
-        architectureGraph: {
-          id: "graph",
-          title: "Published graph",
-          nodes: [{ id: "node", label: "Node" }],
-          edges: [],
-          evidenceId: "project.graph",
-        },
+        architectureGraph,
       }),
     }));
+    const fixtureHtml = renderToStaticMarkup(createElement(ProjectCard, {
+      project: {
+        ...PROJECT_CARD_DEVELOPMENT_FIXTURE,
+        architectureGraph: {
+          ...architectureGraph,
+          developmentFixture: true,
+        },
+      },
+    }));
 
-    expect(html).toContain('aria-disabled="false"');
-    expect(html).not.toContain(" disabled");
-    expect(html).toContain("Open the published architecture nodes and flows.");
+    expect(publishedHtml).toContain('aria-disabled="false"');
+    expect(publishedHtml).not.toContain(" disabled");
+    expect(publishedHtml).toContain(
+      "Open the published architecture nodes and flows.",
+    );
+    expect(fixtureHtml).toContain(
+      "Open the development fixture architecture nodes and flows.",
+    );
+    expect(fixtureHtml).not.toContain(
+      "Open the published architecture nodes and flows.",
+    );
   });
 });

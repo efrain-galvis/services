@@ -33,8 +33,11 @@ Efrain knowledge updates.
 ProjectCard enables **Explore architecture** only when its controlled project
 data includes a typed architecture graph. Without one, the CTA remains disabled
 and explains that published evidence is required. The production collection has
-no architecture graphs today, so ArchitectureDiagram fails closed to an
-evidence-cited thin state rather than inventing client systems.
+no architecture graphs today, so normal project entry points remain gated.
+ArchitectureDiagram itself also has an evidence-cited thin state for direct
+renders without graph data rather than inventing client systems. If a supplied
+graph is invalid, the project adapter rejects the whole project instead of
+partially presenting unverified architecture.
 
 For layout QA, run the local dev server, open **View selected work**, choose
 **Load development fixture**, then **Explore architecture**. The fixture graph
