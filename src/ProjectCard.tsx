@@ -173,7 +173,6 @@ export default function ProjectCard({
         </p>
         <button
           type="button"
-          disabled={!project.architectureGraph}
           aria-disabled={!project.architectureGraph}
           aria-describedby={architectureDescriptionId}
           onClick={() => {

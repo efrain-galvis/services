@@ -12,6 +12,7 @@ export type ArchitectureDiagramProps = {
 };
 
 type Point = { x: number; y: number };
+type EdgeLine = { x1: number; y1: number; x2: number; y2: number };
 
 const VIEWBOX_WIDTH = 900;
 const NODE_WIDTH = 190;
@@ -42,6 +43,10 @@ function wrapNodeLabel(label: string): string[] {
 }
 
 function layoutNodes(diagram: ArchitectureDiagramModel) {
+  if (diagram.nodes.length === 0) {
+    return { height: 120, positions: new Map<string, Point>() };
+  }
+
   const columns = Math.min(3, diagram.nodes.length);
   const rows = Math.ceil(diagram.nodes.length / columns);
   const xGap = VIEWBOX_WIDTH / columns;
@@ -63,6 +68,49 @@ function layoutNodes(diagram: ArchitectureDiagramModel) {
   return { height: 120 + (rows - 1) * yGap, positions };
 }
 
+function isRenderableDiagram(
+  diagram: ArchitectureDiagramModel | null | undefined,
+): diagram is ArchitectureDiagramModel {
+  if (!diagram || diagram.nodes.length === 0) return false;
+  const nodeIds = new Set(diagram.nodes.map((node) => node.id));
+  return (
+    nodeIds.size === diagram.nodes.length &&
+    diagram.edges.every(
+      (edge) =>
+        edge.source !== edge.target &&
+        nodeIds.has(edge.source) &&
+        nodeIds.has(edge.target),
+    )
+  );
+}
+
+function getEdgeLine(
+  positions: Map<string, Point>,
+  sourceId: string,
+  targetId: string,
+): EdgeLine | null {
+  const source = positions.get(sourceId);
+  const target = positions.get(targetId);
+  if (!source || !target) return null;
+
+  const dx = target.x - source.x;
+  const dy = target.y - source.y;
+  if (dx === 0 && dy === 0) return null;
+
+  const xScale =
+    dx === 0 ? Number.POSITIVE_INFINITY : NODE_WIDTH / 2 / Math.abs(dx);
+  const yScale =
+    dy === 0 ? Number.POSITIVE_INFINITY : NODE_HEIGHT / 2 / Math.abs(dy);
+  const scale = Math.min(xScale, yScale);
+
+  return {
+    x1: source.x + dx * scale,
+    y1: source.y + dy * scale,
+    x2: target.x - dx * scale,
+    y2: target.y - dy * scale,
+  };
+}
+
 export default function ArchitectureDiagram({
   diagram,
   thinState = ARCHITECTURE_THIN_STATE,
@@ -72,7 +120,7 @@ export default function ArchitectureDiagram({
   const descriptionId = useId();
   const markerId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
 
-  if (!diagram) {
+  if (!isRenderableDiagram(diagram)) {
     return (
       <section className="arch-shell" aria-labelledby={titleId}>
         <header className="arch-header">
@@ -106,6 +154,7 @@ export default function ArchitectureDiagram({
   }
 
   const { height, positions } = layoutNodes(diagram);
+  const nodeById = new Map(diagram.nodes.map((node) => [node.id, node]));
 
   return (
     <section className="arch-shell" aria-labelledby={titleId}>
@@ -155,24 +204,22 @@ export default function ArchitectureDiagram({
           </defs>
           <g className="arch-edges">
             {diagram.edges.map((edge) => {
-              const source = positions.get(edge.source)!;
-              const target = positions.get(edge.target)!;
-              const direction = target.x >= source.x ? 1 : -1;
-              const x1 = source.x + direction * (NODE_WIDTH / 2);
-              const x2 = target.x - direction * (NODE_WIDTH / 2);
-              const y1 = source.y;
-              const y2 = target.y;
+              const line = getEdgeLine(positions, edge.source, edge.target);
+              if (!line) return null;
               return (
                 <g key={edge.id}>
                   <line
-                    x1={x1}
-                    y1={y1}
-                    x2={x2}
-                    y2={y2}
+                    x1={line.x1}
+                    y1={line.y1}
+                    x2={line.x2}
+                    y2={line.y2}
                     markerEnd={`url(#${markerId})`}
                   />
                   {edge.label ? (
-                    <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 - 8}>
+                    <text
+                      x={(line.x1 + line.x2) / 2}
+                      y={(line.y1 + line.y2) / 2 - 8}
+                    >
                       {edge.label}
                     </text>
                   ) : null}
@@ -182,7 +229,8 @@ export default function ArchitectureDiagram({
           </g>
           <g className="arch-nodes">
             {diagram.nodes.map((node, index) => {
-              const point = positions.get(node.id)!;
+              const point = positions.get(node.id);
+              if (!point) return null;
               const labelLines = wrapNodeLabel(node.label);
               return (
                 <g key={node.id}>
@@ -230,12 +278,13 @@ export default function ArchitectureDiagram({
               <strong>{node.label}</strong>
               <span>
                 {diagram.edges
-                  .filter((edge) => edge.source === node.id)
-                  .map((edge) => {
-                    const target = diagram.nodes.find(
-                      (candidate) => candidate.id === edge.target,
-                    )!;
-                    return `${edge.label ? `${edge.label} to ` : "Flows to "}${target.label}`;
+                  .flatMap((edge) => {
+                    if (edge.source !== node.id) return [];
+                    const target = nodeById.get(edge.target);
+                    if (!target) return [];
+                    return [
+                      `${edge.label ? `${edge.label} to ` : "Flows to "}${target.label}`,
+                    ];
                   })
                   .join(" · ") || "No outgoing flow"}
               </span>

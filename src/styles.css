@@ -494,9 +494,9 @@ footer { display: flex; justify-content: space-between; gap: 2rem; border-top: 1
   flex: none; border: 1px solid var(--line); border-radius: .45rem; padding: .55rem .65rem;
   color: #77736c; background: transparent; font: inherit; text-transform: uppercase; letter-spacing: inherit;
 }
-.project-card-footer button:not(:disabled) { border-color: #c8ff4c66; color: var(--acid); cursor: pointer; }
-.project-card-footer button:not(:disabled):hover { color: #10100f; background: var(--acid); }
-.project-card-footer button:disabled { cursor: not-allowed; }
+.project-card-footer button[aria-disabled="false"] { border-color: #c8ff4c66; color: var(--acid); cursor: pointer; }
+.project-card-footer button[aria-disabled="false"]:hover { color: #10100f; background: var(--acid); }
+.project-card-footer button[aria-disabled="true"] { cursor: not-allowed; }
 .project-architecture-description {
   margin: 0; padding: 0 1rem .85rem; color: #918c84;
   font: .58rem/1.45 "JetBrains Mono", monospace; text-align: right;
@@ -519,6 +519,9 @@ footer { display: flex; justify-content: space-between; gap: 2rem; border-top: 1
   text-transform: uppercase; letter-spacing: .05em;
 }
 .project-thin-state button:hover { color: #10100f; background: #f2c45c; }
+.project-thin-state .project-fixture-error {
+  margin: .75rem auto 0; color: #ff9a7c; font: .65rem/1.5 "JetBrains Mono", monospace;
+}
 .project-empty strong { color: var(--ink); }
 .project-empty p { margin: .5rem 0 0; color: var(--muted); font-size: .82rem; }
 .project-grid-footer { padding: .9rem clamp(1.1rem, 2.25vw, 1.55rem); border-top: 1px solid var(--line); }

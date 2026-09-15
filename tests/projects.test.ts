@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import ProjectCard from "../src/ProjectCard";
-import ProjectGrid from "../src/ProjectGrid";
+import ProjectGrid, { loadDevelopmentFixture } from "../src/ProjectGrid";
 import {
   adaptProject,
   adaptProjects,
@@ -128,6 +128,17 @@ describe("project publication and filtering", () => {
 });
 
 describe("project UI safety states", () => {
+  it("turns a fixture import rejection into a retryable error result", async () => {
+    const result = await loadDevelopmentFixture(() =>
+      Promise.reject(new Error("chunk unavailable")),
+    );
+
+    expect(result).toEqual({
+      project: null,
+      error: "Development fixture could not load. Try again.",
+    });
+  });
+
   it("renders the evidence-cited thin state when no projects are published", () => {
     const html = renderToStaticMarkup(createElement(ProjectGrid));
 
@@ -171,14 +182,14 @@ describe("project UI safety states", () => {
     expect(html).toContain("Explore architecture");
   });
 
-  it("disables Explore architecture with an accessible explanation when no graph exists", () => {
+  it("keeps unavailable Explore architecture focusable with an accessible explanation", () => {
     const html = renderToStaticMarkup(createElement(ProjectCard, {
       project: project(),
     }));
 
     expect(html).toContain("Explore architecture");
-    expect(html).toContain("disabled");
     expect(html).toContain('aria-disabled="true"');
+    expect(html).not.toContain(' disabled=""');
     expect(html).toContain(
       "Unavailable until a published architecture graph is linked",
     );

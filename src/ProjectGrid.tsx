@@ -19,6 +19,29 @@ export type ProjectGridProps = {
   onClose?: () => void;
 };
 
+type ArchitectureFixtureModule = typeof import("./architecture.fixture");
+type ArchitectureFixtureLoader = () => Promise<ArchitectureFixtureModule>;
+
+export async function loadDevelopmentFixture(
+  loadFixture: ArchitectureFixtureLoader = () => import("./architecture.fixture"),
+): Promise<{ project: Project | null; error: string }> {
+  try {
+    const { ARCHITECTURE_DEVELOPMENT_FIXTURE } = await loadFixture();
+    return {
+      project: {
+        ...PROJECT_CARD_DEVELOPMENT_FIXTURE,
+        architectureGraph: ARCHITECTURE_DEVELOPMENT_FIXTURE,
+      },
+      error: "",
+    };
+  } catch {
+    return {
+      project: null,
+      error: "Development fixture could not load. Try again.",
+    };
+  }
+}
+
 export default function ProjectGrid({
   projects = PUBLISHED_PROJECTS,
   thinState = PROJECTS_THIN_STATE,
@@ -27,9 +50,11 @@ export default function ProjectGrid({
 }: ProjectGridProps) {
   const titleId = useId();
   const statusId = useId();
+  const fixtureErrorId = useId();
   const [filters, setFilters] = useState<string[]>([]);
   const [fixtureProject, setFixtureProject] = useState<Project | null>(null);
   const [fixtureBusy, setFixtureBusy] = useState(false);
+  const [fixtureError, setFixtureError] = useState("");
   const [activeArchitecture, setActiveArchitecture] =
     useState<ArchitectureDiagramModel | null>(null);
   const sourceProjects =
@@ -47,17 +72,18 @@ export default function ProjectGrid({
     );
   }
 
-  async function loadDevelopmentFixture() {
+  async function handleLoadDevelopmentFixture() {
     if (!showDevelopmentFixture || fixtureBusy) return;
     setFixtureBusy(true);
+    setFixtureError("");
     try {
-      const { ARCHITECTURE_DEVELOPMENT_FIXTURE } = await import(
-        "./architecture.fixture"
-      );
-      setFixtureProject({
-        ...PROJECT_CARD_DEVELOPMENT_FIXTURE,
-        architectureGraph: ARCHITECTURE_DEVELOPMENT_FIXTURE,
-      });
+      const result = await loadDevelopmentFixture();
+      setFixtureProject(result.project);
+      setFixtureError(result.error);
+    } catch {
+      // Keep the event handler rejection-safe if fixture loading changes later.
+      setFixtureProject(null);
+      setFixtureError("Development fixture could not load. Try again.");
     } finally {
       setFixtureBusy(false);
     }
@@ -141,11 +167,21 @@ export default function ProjectGrid({
             <button
               type="button"
               disabled={fixtureBusy}
-              onClick={() => void loadDevelopmentFixture()}
+              aria-describedby={fixtureError ? fixtureErrorId : undefined}
+              onClick={() => void handleLoadDevelopmentFixture()}
             >
-              {fixtureBusy ? "Loading fixture…" : "Load development fixture"}
+              {fixtureBusy
+                ? "Loading fixture…"
+                : fixtureError
+                  ? "Retry development fixture"
+                  : "Load development fixture"}
             </button>
           )}
+          {fixtureError ? (
+            <p className="project-fixture-error" id={fixtureErrorId} role="alert">
+              {fixtureError}
+            </p>
+          ) : null}
         </div>
       ) : visibleProjects.length > 0 ? (
         <div className="project-grid" aria-describedby={statusId}>

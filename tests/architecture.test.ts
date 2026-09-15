@@ -84,6 +84,12 @@ describe("architecture adapter", () => {
       nodes: [{ id: "source", label: { html: "No" } }],
       edges: [],
     })).toBeNull();
+    expect(adaptArchitectureDiagram({
+      id: "self-loop",
+      title: "Self loop",
+      nodes: [{ id: "source", label: "Source" }],
+      edges: [{ source: "source", target: "source" }],
+    })).toBeNull();
   });
 });
 
@@ -125,5 +131,55 @@ describe("ArchitectureDiagram", () => {
     expect(html).toContain('textLength="166"');
     expect(html).toContain("…</tspan>");
     expect(html).toContain(`<strong>${longLabel}</strong>`);
+  });
+
+  it("fails closed for empty or dangling hand-authored diagrams", () => {
+    const emptyHtml = renderToStaticMarkup(
+      createElement(ArchitectureDiagram, {
+        diagram: { ...diagram, nodes: [], edges: [] },
+      }),
+    );
+    const danglingHtml = renderToStaticMarkup(
+      createElement(ArchitectureDiagram, {
+        diagram: {
+          ...diagram,
+          nodes: [{ id: "source", label: "Source" }],
+          edges: [{ id: "dangling", source: "source", target: "missing" }],
+        },
+      }),
+    );
+
+    expect(emptyHtml).toContain(ARCHITECTURE_THIN_STATE.title);
+    expect(emptyHtml).not.toContain("<svg");
+    expect(emptyHtml).not.toContain("NaN");
+    expect(danglingHtml).toContain(ARCHITECTURE_THIN_STATE.title);
+    expect(danglingHtml).not.toContain("<svg");
+  });
+
+  it("intersects vertically aligned edges with node boundaries", () => {
+    const nodes = Array.from({ length: 6 }, (_, index) => ({
+      id: `node-${index}`,
+      label: `Node ${index}`,
+    }));
+    const html = renderToStaticMarkup(
+      createElement(ArchitectureDiagram, {
+        diagram: {
+          ...diagram,
+          nodes,
+          edges: [
+            {
+              id: "vertical",
+              source: "node-0",
+              target: "node-3",
+              label: "Vertical flow",
+            },
+          ],
+        },
+      }),
+    );
+
+    expect(html).toContain(
+      '<line x1="150" y1="101" x2="150" y2="149"',
+    );
   });
 });

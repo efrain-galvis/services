@@ -113,7 +113,12 @@ export function adaptArchitectureDiagram(
     safeNodes.length === 0 ||
     nodeIds.size !== safeNodes.length ||
     edgeIds.size !== safeEdges.length ||
-    safeEdges.some((edge) => !nodeIds.has(edge.source) || !nodeIds.has(edge.target))
+    safeEdges.some(
+      (edge) =>
+        edge.source === edge.target ||
+        !nodeIds.has(edge.source) ||
+        !nodeIds.has(edge.target),
+    )
   ) {
     return null;
   }
